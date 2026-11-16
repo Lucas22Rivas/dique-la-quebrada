@@ -130,12 +130,25 @@ function evaluar(e) {
     if (arribaMod && !arribaFuerte) arribaSube.forEach(r => add(2, `${r.nombre} subió ${f2(r.s30)} m en 30 min aguas arriba`));
     if (lluviaFuerte) add(2, `Lluvia intensa en la cuenca ahora (${f0(cuenca.h1)} mm/h, intensidad ${f0(cuenca.intensidad)} mm/h)`);
 
+    // --- Tormenta en camino (pronóstico de trayectoria del radar) ---
+    const tc = require("./engine.js").mejorTormenta(tormentas && tormentas.pronostico ? tormentas.pronostico.celdas : null);
+    let tormenta = null;
+    if (tc) {
+      tormenta = { eta: tc.i.eta, etaMin: tc.i.etaMin, etaMax: tc.i.etaMax, prob: tc.i.prob, dbz: tc.c.maxDbz, objetivo: tc.i.corto, objetivoId: tc.i.id, hacia: tc.c.hacia, kmh: tc.c.kmh, mmEst: tc.i.mmEst, yaEncima: tc.i.yaEncima };
+      const txt = `Tormenta de ${f0(tc.c.maxDbz)} dBZ ${tc.i.yaEncima ? "ya sobre " + tc.i.corto : "llegaría a " + tc.i.corto + " en ~" + tc.i.eta + " min"} (probabilidad ${Math.round(tc.i.prob * 100)} %)`;
+      if (tc.c.maxDbz >= 55 && tc.i.prob >= 0.5 && tc.i.eta <= 30) add(2, txt); else add(1, txt);
+    }
+
     // --- Nivel 1: vigilancia ---
     if (lluviaModerada && !lluviaFuerte) add(1, "Llueve en la cuenca y las condiciones podrían formar una crecida");
     if (absorbible != null && pronostico && pronostico.h24 >= absorbible) add(1, `El pronóstico (${f0(pronostico.h24)} mm en 24 h) supera lo que el dique puede absorber (${f0(absorbible)} mm)`);
     if (damVierte && !diqueMod) add(1, "El dique está en el vertedero o cerca");
     if (cellsCuenca.length) add(1, `Celdas de tormenta sobre la cuenca (${cellsCuenca.length}, la más cercana a ${f0(cellsCuenca[0].dist)} km)`);
 
+    // ¿Tenemos con qué evaluar? Sin sensor local ni de aguas arriba, la zona NO puede darse por segura
+    const localOk = !!(local && local.nivel != null && local.activa !== false);
+    const sinDatos = !localOk && !arriba.length;
+    const sinLluvia = !(cuenca && cuenca.estaciones > 0);
     const n = motivos.reduce((a, x) => Math.max(a, x.n), 0);
     motivos.sort((a, b) => b.n - a.n);
     const nivel = NIVELES[n];
@@ -155,10 +168,12 @@ function evaluar(e) {
 
     return {
       id: z.id, nombre: z.nombre, detalle: z.detalle, lat: z.lat, lon: z.lon,
-      nivel, orden: n, etiqueta: ETIQUETA[nivel], accion: ACCION[nivel],
+      nivel, orden: n, sinDatos, sinLluvia,
+      etiqueta: sinDatos && n === 0 ? "Sin datos del río" : ETIQUETA[nivel],
+      accion: sinDatos && n === 0 ? "No hay lecturas de los sensores del río (Puente San José ni Amuchástegui), así que no podemos confirmar que tu zona esté segura. Si llueve fuerte, actuá con precaución y seguí los avisos de Defensa Civil." : ACCION[nivel],
       motivos: motivos.map(x => ({ nivel: NIVELES[x.n], texto: x.texto })),
       local: local ? { fuente: local.nombre || ("sensor " + local.id), nivel: local.nivel, sobreNormal: sobre, subida30: s30, subida10: s10, dato: local.dato || null } : null,
-      etapas: z.etapas, eta, calibrar: true,
+      etapas: z.etapas, eta, tormenta, calibrar: true,
     };
   });
 

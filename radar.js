@@ -74,12 +74,13 @@
   function distKm(a, b) { const dl = rad(b[0] - a[0]), dn = rad(b[1] - a[1]); const h = Math.sin(dl / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
   function rumbo(a, b) { const y = Math.sin(rad(b[1] - a[1])) * Math.cos(rad(b[0])), x = Math.cos(rad(a[0])) * Math.sin(rad(b[0])) - Math.sin(rad(a[0])) * Math.cos(rad(b[0])) * Math.cos(rad(b[1] - a[1])); const g = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; return ["N", "NE", "E", "SE", "S", "SO", "O", "NO"][Math.round(g / 45) % 8]; }
   const stormLayer = L.layerGroup().addTo(map);
-  let records = [], featCache = {};
+  let records = [], featCache = {}, featRaw = {};
   async function features(rec) {
     if (featCache[rec.id]) return featCache[rec.id];
     const r = await fetch(API + "/tops-cores/" + rec.id + "/features");
     if (!r.ok) return null;
     const fc = await r.json();
+    featRaw[rec.id] = fc;
     const fs = fc.features || [];
     const tops = fs.filter(f => f.properties && f.properties.type === "top" && f.geometry.type === "Point");
     const cells = fs.filter(f => f.properties && f.properties.type === "blob" && f.geometry.type === "Polygon").map(b => {
@@ -92,6 +93,49 @@
     });
     return featCache[rec.id] = cells;
   }
+  // ---------- Pronóstico de trayectoria (nowcast) ----------
+  const NC = window.LQ_NOWCAST, trackLayer = L.layerGroup().addTo(map);
+  let ultNC = null;
+  if (NC) NC.OBJETIVOS.filter(o => o.id === "cuenca").forEach(o => L.polygon(o.poly, { pane: "top", color: "#4ac8ef", weight: 1.5, dashArray: "4 4", fill: true, fillOpacity: .05, interactive: true }).bindTooltip(o.nombre + " (aprox.)").addTo(map));
+  async function pronosticar() {
+    if (!NC || !records.length) return;
+    const recs = records.slice().sort((a, b) => Date.parse(a.observation_time) - Date.parse(b.observation_time)).slice(-5);
+    const scans = [];
+    for (const r of recs) { try { if (!featRaw[r.id]) await features(r); if (featRaw[r.id]) scans.push({ t: Date.parse(r.observation_time), cells: NC.celdasDeFeatures(featRaw[r.id]) }); } catch (e) { } }
+    if (!scans.length) return;
+    ultNC = NC.analizar(scans, { ahora: refT || Date.now(), horizonteMin: 120 });
+    dibujarTrayectorias(); listarLlegadas();
+  }
+  function dibujarTrayectorias() {
+    trackLayer.clearLayers();
+    if (!ultNC || !$("lyrTrack").checked) return;
+    ultNC.celdas.filter(c => c.distDiqueKm <= 150 && c.kmh >= 5).forEach(c => {
+      const col = clasificar(c.maxDbz, c.topKm).col, imp = c.impactos.some(i => i.prob >= 0.2), fuerte = imp || c.distDiqueKm <= 60;
+      if (c.track.length >= 2) L.polyline(c.track.concat([[c.latRadar, c.lonRadar]]).filter(Boolean), { pane: "storm", color: "#fff", weight: 1.2, opacity: .55, dashArray: "2 4", interactive: false }).addTo(trackLayer);
+      if (fuerte) L.polygon(c.cono.izq.concat(c.cono.der.slice().reverse()), { pane: "storm", color: col, weight: 1, opacity: .7, fillColor: col, fillOpacity: imp ? .16 : .07, dashArray: "3 3" })
+        .bindTooltip(`<b>${fmt(c.maxDbz)} dBZ</b> · se mueve hacia el ${c.hacia} a ${c.kmh} km/h<br>Zona por donde pasaría en la próxima hora`).addTo(trackLayer);
+      const lim = imp ? 90 : 60, linea = c.proy.filter(p => p[2] <= lim).map(p => [p[0], p[1]]);
+      L.polyline(linea, { pane: "storm", color: fuerte ? "#fff" : col, weight: fuerte ? 2.2 : 1.4, opacity: .9, interactive: false }).addTo(trackLayer);
+      const p15 = c.proy.find(p => p[2] === 15);
+      if (p15) L.marker([p15[0], p15[1]], { pane: "storm", interactive: false, icon: L.divIcon({ className: "", html: `<div style="transform:rotate(${c.haciaDeg - 90}deg);color:${fuerte ? "#fff" : col};font-size:15px;line-height:1;text-shadow:0 0 3px #000">➤</div>`, iconSize: [16, 16], iconAnchor: [8, 8] }) }).addTo(trackLayer);
+      if (fuerte) c.proy.filter(p => p[2] === 30 || p[2] === 60).forEach(p => L.marker([p[0], p[1]], { pane: "storm", interactive: false, icon: L.divIcon({ className: "", html: `<span class="rv-t">${p[2]}′</span>`, iconSize: [26, 14], iconAnchor: [13, 7] }) }).addTo(trackLayer));
+    });
+  }
+  function listarLlegadas() {
+    if (!ultNC) return;
+    const m = ultNC.movimiento;
+    $("rvMove").innerHTML = (m ? `Movimiento general de las tormentas: <b>hacia el ${m.hacia} a ${m.kmh} km/h</b>.` : "Todavía no hay movimiento medido (hacen falta al menos dos barridos con celdas).") +
+      ` Radar de las ${hora(ultNC.radar)}` + (refT ? `, proyectado a las ${hora(ultNC.generado)} (revisión de una tormenta pasada).` : ` (${Math.max(0, ultNC.edadMin)} min de demora), proyectado a la hora actual.`);
+    const items = [];
+    ultNC.celdas.forEach(c => c.impactos.filter(i => i.prob >= 0.2).forEach(i => items.push({ c, i })));
+    items.sort((a, b) => a.i.eta - b.i.eta);
+    $("rvEta").innerHTML = items.length ? items.slice(0, 6).map(({ c, i }) => {
+      const cl = clasificar(c.maxDbz, c.topKm);
+      return `<li class="eta" style="--c:${cl.col}"><b>${esc(i.nombre)}</b><span class="when">${i.yaEncima ? "Ahora, encima" : "en ~" + i.eta + " min · " + hora(ultNC.generado + i.eta * 6e4)}</span>
+        <small>Entre ${i.etaMin} y ${i.etaMax} min · probabilidad ${Math.round(i.prob * 100)} % · ${cl.t.split(" · ")[0].toLowerCase()} (${fmt(c.maxDbz)} dBZ) · se mueve hacia el ${c.hacia} a ${c.kmh} km/h${i.mmEst ? " · podría dejar ~" + i.mmEst + " mm" : ""}</small></li>`;
+    }).join("") : `<li class="muted">Ninguna tormenta va hacia la cuenca del dique ni hacia las zonas inundables de Río Ceballos en las próximas 2 horas.</li>`;
+  }
+  const esc = x => String(x).replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
   function recordFor(t) {
     let best = null, bd = Infinity;
     records.forEach(r => { const d = Math.abs(Date.parse(r.observation_time) - t); if (d < bd) { bd = d; best = r; } });
@@ -160,6 +204,7 @@
       if (!cogs.length) { tEl.textContent = "El radar no publicó imágenes en las últimas 2 horas"; aEl.textContent = ""; return; }
       Object.keys(overlays).forEach(id => { if (!cogs.find(c => String(c.id) === id)) { map.removeLayer(overlays[id]); delete overlays[id]; } });
       frames = cogs; show(frames.length - 1); loop();
+      pronosticar();
     } catch (e) { tEl.textContent = "Radar no disponible en este momento"; aEl.textContent = "Reintenta solo en 5 minutos"; }
   }
   const stop = () => { playing = false; playBtn.textContent = "Animar"; playBtn.setAttribute("aria-pressed", false); loop(); };
@@ -168,6 +213,7 @@
   $("rvNext").addEventListener("click", () => { stop(); show(idx + 1); });
   $("lyrRain").addEventListener("change", () => show(idx));
   $("lyrStorm").addEventListener("change", () => show(idx));
+  $("lyrTrack").addEventListener("change", dibujarTrayectorias);
   $("lyrSat").addEventListener("change", e => { if (e.target.checked) { sat.setUrl(sat._url.split("?")[0] + "?t=" + Date.now()); sat.addTo(map); } else map.removeLayer(sat); });
   load(); if (!refT) setInterval(load, 5 * 60 * 1000);
   setInterval(() => { if (map.hasLayer(sat)) sat.setUrl(sat._url.split("?")[0] + "?t=" + Date.now()); }, 10 * 60 * 1000);

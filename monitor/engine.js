@@ -21,6 +21,13 @@
     tormenta: { emergencia: { dbz: 60, km: 10 }, alerta: [{ dbz: 55, km: 20 }, { dbz: 60, km: 40 }], atencion: { dbz: 50, km: 40 } },
   };
   const NIVELES = ["normal", "atencion", "alerta", "emergencia"];
+  // De las celdas con pronóstico de trayectoria, la más relevante que llega a la cuenca o a las zonas inundables
+  function mejorTormenta(nowcast) {
+    const cand = [];
+    (nowcast || []).forEach(c => (c.impactos || []).forEach(i => { if ((i.id === "cuenca" || i.id === "zonas") && c.maxDbz >= 50 && i.prob >= 0.4 && i.eta <= 60) cand.push({ c, i }); }));
+    cand.sort((a, b) => (b.c.maxDbz >= 55) - (a.c.maxDbz >= 55) || a.i.eta - b.i.eta || b.i.prob - a.i.prob);
+    return cand[0] || null;
+  }
   const ETIQUETA = { normal: "Normal", atencion: "Atención", alerta: "Alerta", emergencia: "Emergencia" };
 
   /* entrada: { nivelDique (m respecto del vertedero o null), lluvia: {h1,h3,h24,d5} (promedio de la cuenca, mm),
@@ -56,6 +63,13 @@
     if (em) subir(3, "Radar: " + desc(em));
     else if (al) subir(2, "Radar: " + desc(al));
     else if (at) subir(1, "Radar: " + desc(at));
+    // Pronóstico de trayectoria (nowcast): la celda más inminente que llegaría a la cuenca o a Río Ceballos
+    const tc = mejorTormenta(e.nowcast);
+    if (tc) {
+      const txt = "Radar: tormenta de " + f(tc.c.maxDbz) + " dBZ " + (tc.i.yaEncima ? "ya sobre " + tc.i.corto : "llegaría a " + tc.i.corto + " en ~" + tc.i.eta + " min") +
+        " (probabilidad " + Math.round(tc.i.prob * 100) + " %, se mueve hacia el " + tc.c.hacia + " a " + tc.c.kmh + " km/h)";
+      if (tc.c.maxDbz >= 55 && tc.i.prob >= 0.5 && tc.i.eta <= 30) subir(2, txt); else if (tc.c.maxDbz >= 50 && tc.i.prob >= 0.4 && tc.i.eta <= 60) subir(1, txt);
+    }
     // Alerta
     if (d != null && d > 0 && d <= UMBRALES.emergencia.vertidoM) subir(2, "El dique está vertiendo (" + f(126 * d ** 1.5) + " m³/s al río)");
     if (e.lluvia.h1 >= UMBRALES.alerta.lluvia1h && e.lluvia.h1 < UMBRALES.emergencia.lluvia1h) subir(2, f(e.lluvia.h1) + " mm en la última hora en la cuenca");
@@ -80,6 +94,6 @@
     };
   }
 
-  const api = { evaluar, UMBRALES, NIVELES, ETIQUETA, vol, absorbP, cnAmc, cnCal, runoffMM, CAL };
+  const api = { evaluar, mejorTormenta, UMBRALES, NIVELES, ETIQUETA, vol, absorbP, cnAmc, cnCal, runoffMM, CAL };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LQ_MOTOR = api;
 })(typeof window !== "undefined" ? window : this);

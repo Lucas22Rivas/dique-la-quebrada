@@ -90,8 +90,9 @@
     // Estado de los datos
     const viejo = Date.now() - Date.parse(E.generado) > 30 * 60e3;
     $("livePill").className = "pill " + (viejo ? "" : "live"); $("livePill").textContent = viejo ? "● DATOS ATRASADOS" : "● EN VIVO";
-    $("sbDot").className = "dot" + (viejo ? " bad" : "");
-    $("sbTxt").textContent = viejo ? "Datos atrasados" : ordenEv >= 2 || a.orden >= 2 ? "Amenaza activa · lectura cada 2–3 min" : "Datos en vivo · cada 10 min";
+    const sinSensores = !(E.cuenca && E.cuenca.estaciones > 0) && !(E.rios || []).some(r => r.activa);
+    $("sbDot").className = "dot" + (viejo || sinSensores ? " bad" : "");
+    $("sbTxt").textContent = viejo ? "Datos atrasados" : sinSensores ? "Sensores sin datos · solo radar" : ordenEv >= 2 || a.orden >= 2 ? "Amenaza activa · lectura cada 2–3 min" : "Datos en vivo · cada 10 min";
     $("sbSub").innerHTML = "Actualizado " + hora(E.generado) + " (" + hace(E.generado) + ")<br>OHMC · APRHI · Open-Meteo";
     const n = (ev ? ev.zonas.filter(z => z.orden >= 1).length : 0) + (a.orden >= 1 ? 1 : 0);
     $("navCount").hidden = !n; $("navCount").textContent = n;
@@ -100,13 +101,19 @@
 
     // Banner
     const TIT = ["NORMAL · SIN RIESGO EN LA CUENCA", "ATENCIÓN · VIGILANCIA REFORZADA", "ALERTA HIDROLÓGICA", "EMERGENCIA HIDROLÓGICA"];
-    $("banner").dataset.lvl = lvl;
-    $("bnTitle").textContent = TIT[a.orden] || TIT[0];
-    $("bnMsg").textContent = a.orden ? (a.motivos[0] ? a.motivos[0].texto : "") : "No llueve en la cuenca y el pronóstico no compromete al dique. Vigilancia de rutina.";
+    // ¿Estamos ciegos? (sin pluviómetros de la cuenca, sin río y sin dique)
+    const ciego = !(E.cuenca && E.cuenca.estaciones > 0) && !(E.rios || []).some(r => r.activa) && !(E.dique && E.dique.activa);
+    const sesion = (E.errores || []).some(x => /sesión/.test(x));
+    $("banner").dataset.lvl = ciego && a.orden === 0 ? "warn" : lvl;
+    $("bnTitle").textContent = ciego && a.orden === 0 ? "SIN DATOS DE LOS SENSORES DEL OHMC" : (TIT[a.orden] || TIT[0]);
+    $("bnMsg").textContent = ciego && a.orden === 0
+      ? (sesion ? "La API de estaciones del OHMC dejó de entregar datos a terceros (ahora exige una sesión de su visor). " : "Los pluviómetros, el dique y los sensores del río no están respondiendo. ") + "El radar y el pronóstico siguen funcionando, pero no podemos confirmar el estado del río."
+      : a.orden ? (a.motivos[0] ? a.motivos[0].texto : "") : "No llueve en la cuenca y el pronóstico no compromete al dique. Vigilancia de rutina.";
     $("bnUpd").textContent = hora(E.generado);
     $("investigate").textContent = a.orden ? "Investigar evento ↗" : "Ver sensores ↗";
     $("evtPill").textContent = a.orden ? (a.etiqueta || "").toUpperCase() : "EN VIVO";
 
+    renderRadar();
     renderMetricas();
     if (!sel || !sensores().some(s => s.id === sel)) sel = (sensores().find(s => ZONA_SENSOR.includes(s.id) && s.activa) || sensores()[0] || {}).id;
     renderLista(); renderMapa(); renderCrono(); seleccionar(sel, true); renderLluvia();
@@ -121,6 +128,7 @@
     host.innerHTML = ev.zonas.map(z => {
       const L = z.local;
       const lectura = L && L.nivel != null ? `Río ${fmt(L.nivel, 2)} m` + (L.sobreNormal != null ? ` · ${sg(L.sobreNormal * 100, 0, " cm")} sobre lo normal` : "") + (L.subida30 != null ? ` · ${sg(L.subida30 * 100, 0, " cm/30 min")}` : "") : "Sin lectura del sensor local";
+      if (z.orden === 0 && z.sinDatos) return `<div class="zona activa" data-lvl="warn"><div class="top"><span class="chip">Sin datos</span><div class="who">Tu zona · ${esc(z.nombre)}<small>${esc(z.detalle)}</small></div></div><div class="accion">${esc(z.accion)}</div><div class="pie"><span>El radar y el pronóstico siguen activos: si se acerca una tormenta, este panel lo va a avisar.</span></div></div>`;
       if (z.orden === 0) return `<div class="zona calma"><span class="dot"></span><div><b>Tu zona · ${esc(z.nombre)}</b> <span class="muted">— sin riesgo de crecida ahora · ${esc(z.detalle)}</span></div><span class="r">${lectura}</span></div>`;
       const eta = !z.eta ? "" : z.eta.minutos > 0
         ? `<div class="eta"><div class="k">Llegada estimada${z.eta.medido ? " · medida" : ""}</div><div class="v">~${z.eta.minutos} min</div><div class="k">${hora(z.eta.hora)} h</div></div>`
@@ -134,6 +142,29 @@
     }).join("");
   }
 
+  // ---------- Franja de radar: pronóstico de trayectoria de tormentas ----------
+  function renderRadar() {
+    const host = $("radarStrip"), P = E.tormentas && E.tormentas.pronostico;
+    if (!P) { host.hidden = true; return; }
+    host.hidden = false;
+    const m = P.movimiento, mov = m ? `movimiento general hacia el <b>${m.hacia}</b> a ${m.kmh} km/h` : "sin movimiento medido";
+    const items = [];
+    (P.celdas || []).forEach(c => (c.impactos || []).filter(i => i.prob >= 0.2).forEach(i => items.push({ c, i })));
+    items.sort((a, b) => a.i.eta - b.i.eta);
+    if (!items.length) {
+      host.className = "radar-strip";
+      host.innerHTML = `<span class="ic">◎</span><span><b>Radar:</b> ninguna tormenta va hacia la cuenca del dique ni hacia Río Ceballos en las próximas 2 h · ${mov} · radar de las ${hora(P.radar)}</span><a href="tablero.html#radar">Ver radar ↗</a>`;
+      return;
+    }
+    const { c, i } = items[0], fuerte = c.maxDbz >= 55;
+    const otras = items.length > 1 ? ` · y ${items.length - 1} llegada(s) más` : "";
+    host.className = "radar-strip viene" + (fuerte ? " fuerte" : "");
+    host.innerHTML = `<span class="ic" style="color:${fuerte ? "var(--crit)" : "var(--warn)"}">⛈</span>
+      <div class="lleg"><span class="t">TORMENTA EN CAMINO · ${esc((i.corto || i.nombre).toUpperCase())}</span><span class="eta">${i.yaEncima ? "Encima ahora" : "~" + i.eta + " min"} <small>${i.yaEncima ? "" : "(" + hora(Date.now() + i.eta * 6e4) + " h · entre " + i.etaMin + " y " + i.etaMax + " min)"}</small></span></div>
+      <span>Probabilidad <b>${Math.round(i.prob * 100)} %</b> · ${fmt(c.maxDbz, 0)} dBZ${c.maxDbz >= 60 ? " (granizo probable)" : c.maxDbz >= 55 ? " (granizo posible)" : ""} · se mueve hacia el ${c.hacia} a ${c.kmh} km/h${i.mmEst ? " · podría dejar ~" + i.mmEst + " mm" : ""}${otras}</span>
+      <a href="tablero.html#radar">Ver trayectoria ↗</a>`;
+  }
+
   // ---------- Métricas ----------
   function renderMetricas() {
     const d = E.dique, cu = E.cuenca || {}, ss = sensores();
@@ -142,8 +173,10 @@
     const act = ss.filter(s => s.activa).length;
     const m = [
       { k: "NIVEL DEL DIQUE", v: d ? sg(d.respectoVertedero, 2) : "–", u: "m", l: d && d.respectoVertedero > 0 ? "crit" : d && d.respectoVertedero > -0.5 ? "warn" : "", s: [d && d.cambio24h != null ? [(d.cambio24h > 0 ? "↗ " : d.cambio24h < 0 ? "↘ " : "") + sg(d.cambio24h * 100, 0, " cm en 24 h"), d.cambio24h > 0.05 ? "up" : ""] : null, ["respecto del vertedero · cota " + (d ? fmt(d.cota, 2) : "–") + " m", ""]] },
+      !(cu.estaciones > 0) ? { k: "LLUVIA EN CUENCA", v: "–", u: "mm", l: "warn", s: [["Sin datos de los pluviómetros", ""], ["No es cero: no hay lectura", ""]] } :
       { k: "LLUVIA EN CUENCA", v: fmt(cu.h1, 1), u: "mm", l: cu.h1 >= 20 ? "crit" : cu.h1 >= 5 ? "bad" : cu.h24 >= 30 ? "warn" : "", s: [["Acumulado última hora", ""], ["Hoy " + fmt(cu.h24, 1) + " mm · 5 días " + fmt(cu.d5, 0) + " mm", cu.h1 > 0 ? "up" : "ok"]] },
       { k: "NIVEL RÍO CEBALLOS", v: rio ? fmt(rio.nivel, 2) : "–", u: "m", l: rio ? (rio.lvl === "crit" ? "crit" : rio.lvl === "warn" ? "warn" : "") : "", s: [rio && rio.subida30 != null ? [(rio.subida30 > 0 ? "↗ " : rio.subida30 < 0 ? "↘ " : "") + sg(rio.subida30 * 100, 0, " cm / 30 min"), rio.subida30 >= 0.05 ? "up" : rio.subida30 <= -0.05 ? "down" : ""] : null, ["Puente San José · caudal est. " + fmt(q, 1) + " m³/s", ""]] },
+      !ss.length ? { k: "SENSORES EN LÍNEA", v: "–", u: "", l: "warn", s: [["Red del OHMC no disponible", ""], ["Solo radar y pronóstico", ""]] } :
       { k: "SENSORES EN LÍNEA", v: String(act), u: "/ " + ss.length, l: act < ss.length * 0.6 ? "warn" : "", s: [["● Datos OHMC / APRHI", "ok"], [ss.length - act ? (ss.length - act) + " sin dato reciente" : "Todos reportando", ""]] },
     ];
     $("metrics").innerHTML = m.map(x => `<article class="metric" data-lvl="${x.l}"><small>${x.k}</small><strong>${x.v} <em>${x.u}</em></strong>${x.s.filter(Boolean).map(s => `<span class="${s[1]}">${esc(s[0])}</span>`).join("")}</article>`).join("");
