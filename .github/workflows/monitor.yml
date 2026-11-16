@@ -40,7 +40,7 @@ jobs:
         env:
           ORUS_USUARIO: ${{ secrets.ORUS_USUARIO }}
           ORUS_CLAVE: ${{ secrets.ORUS_CLAVE }}
-          ORUS_ESTACION: ${{ vars.ORUS_ESTACION }}
+          ORUS_ESTACION: ${{ vars.ORUS_ESTACION || secrets.ORUS_ESTACION }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
