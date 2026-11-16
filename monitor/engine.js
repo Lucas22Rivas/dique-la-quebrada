@@ -35,6 +35,12 @@
     if (e.lluvia.h1 >= UMBRALES.emergencia.lluvia1h) subir(3, f(e.lluvia.h1) + " mm en la última hora en la cuenca");
     if (e.lluvia.h3 >= UMBRALES.emergencia.lluvia3h) subir(3, f(e.lluvia.h3) + " mm en las últimas 3 horas en la cuenca");
     (e.rios || []).forEach(r => { if (r.subida30 != null && r.subida30 >= UMBRALES.emergencia.subidaRio) subir(3, r.nombre + ": el río subió " + f(r.subida30, 2) + " m en 30 min"); });
+    // Altura del río sobre lo normal (mediana de 7 días)
+    (e.rios || []).forEach(r => {
+      if (r.sobreNormal == null) return;
+      const t = r.nombre + ": " + Math.round(r.sobreNormal * 100) + " cm sobre lo normal";
+      if (r.sobreNormal >= 1) subir(3, t); else if (r.sobreNormal >= .5) subir(2, t); else if (r.sobreNormal >= .25) subir(1, t);
+    });
     // Celdas de tormenta del radar (distancia al dique)
     const T = UMBRALES.tormenta, cel = (e.celdas || []).slice().sort((a, b) => a.dist - b.dist);
     const desc = c => (c.maxDbz >= 60 ? "granizo probable" : c.maxDbz >= 55 ? "granizo posible" : "tormenta fuerte") + " a " + f(c.dist) + " km al " + c.dir + " del dique (" + f(c.maxDbz) + " dBZ" + (c.topKm ? ", tope " + f(c.topKm, 1) + " km" : "") + ")";

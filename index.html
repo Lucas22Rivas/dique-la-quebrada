@@ -264,6 +264,38 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
 .hail-key li{border-left:4px solid var(--c);padding-left:9px}
 .hail-key b{color:var(--ink);margin-right:6px}
 .rv-hail span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--c);color:#fff;font:700 10px/1 var(--f-mono);box-shadow:0 0 0 2px #fff,0 2px 8px rgba(0,0,0,.35)}
+/* Historial */
+.hsum{font-size:1.06rem;color:var(--ink);max-width:80ch;border-left:3px solid var(--water);padding-left:14px}
+.hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.hgrid .hcard:first-child{grid-column:1/-1}
+@media (max-width:900px){.hgrid{grid-template-columns:1fr}}
+.hcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 14px;display:grid;gap:8px;min-width:0;align-content:start}
+.hcard-h{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hbig{font-size:.95rem;font-weight:600}
+.hchart{position:relative;min-width:0}
+.hchart svg{display:block;touch-action:pan-y}
+.hchart .tip{position:absolute;top:8px;z-index:2;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;font-size:.78rem;display:grid;gap:3px;min-width:170px;box-shadow:0 8px 20px rgba(0,0,0,.14);pointer-events:none}
+.hchart .tip i,.r3-read i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:0}
+.seg.small button{padding:4px 10px;font-size:.78rem}
+.small-btn{padding:4px 9px;font-size:.78rem}
+#tbEvents td{vertical-align:top}
+/* Río 3D */
+.r3-wrap{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:22px}
+@media (max-width:960px){.r3-wrap{grid-template-columns:1fr}}
+.r3-stage{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
+#r3Canvas{width:100%;height:min(70vh,640px);min-height:400px;background:var(--sky);touch-action:none}
+#r3Canvas canvas{display:block}
+.r3-read{position:absolute;left:12px;top:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;display:grid;gap:4px;font-size:.82rem;box-shadow:0 8px 20px rgba(0,0,0,.14);pointer-events:none;max-width:calc(100% - 24px)}
+.r3-read b#r3When{font-family:var(--f-display);font-size:1.25rem;font-weight:700;text-transform:capitalize}
+.r3-read #r3Vals{display:grid;gap:2px}
+.r3-read em{font-style:normal;font-family:var(--f-mono);color:var(--muted)}
+.r3-scale{display:grid;grid-template-columns:repeat(4,1fr);font-size:.72rem;color:var(--ink-2)}
+.r3-scale span{border-top:8px solid var(--c);padding:5px 4px 0 0}
+.r3-time{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center}
+@media (max-width:600px){.r3-time{grid-template-columns:1fr}}
+.r3-track{position:relative;height:56px}
+.r3-track svg{position:absolute;inset:0 0 18px;width:100%;height:38px;background:var(--panel);border:1px solid var(--line);border-radius:4px}
+.r3-track input{position:absolute;left:0;right:0;bottom:0;width:100%}
 
 </style>
 
@@ -273,7 +305,9 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
     <nav class="nav" aria-label="Secciones">
       <a href="#ahora">Ahora</a>
       <a class="web-only" href="#live">En vivo</a>
+      <a class="web-only" href="#historial">Historial</a>
       <a class="web-only" href="#radar">Radar</a>
+      <a class="web-only" href="#rio3d">Río 3D</a>
       <a href="#mapa">Mapa 3D</a>
       <a href="#parte">Parte del día</a>
       <a href="#herramientas">Simulador</a>
@@ -343,7 +377,7 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
       <div class="tablewrap"><table id="livePluvios"></table></div>
       <h3 style="margin-top:14px">Altura del río</h3>
       <div class="tablewrap"><table id="liveRios"></table></div>
-      <p class="note">Altura sobre el fondo del cauce en cada sensor. Una subida de 0,5 m en 30 minutos dispara Alerta; de 1 m, Emergencia (umbrales provisorios).</p>
+      <p class="note">"Normal" es la altura habitual de cada sensor (mediana de los últimos 7 días). La columna "sobre lo normal" es la que importa: +25 cm ya es una crecida chica, +50 cm es Alerta y +1 m Emergencia. El detalle de cada crecida está en <a href="#historial">Historial</a> y en el <a href="#rio3d">río 3D</a>.</p>
     </div>
   </div>
 
@@ -357,6 +391,57 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
     <p class="note">También se puede seguir desde el navegador en <a href="https://ntfy.sh/dique-la-quebrada-4ax1kuwob5" target="_blank" rel="noopener">ntfy.sh/dique-la-quebrada-4ax1kuwob5</a>. El canal es público: cualquiera con el nombre puede leerlo.</p>
   </details>
   <p class="note">Fuentes: pluviómetros, nivel del dique y sensores de río de APRHI publicados por el <a href="https://estaciones-fe.ohmc.ar/" target="_blank" rel="noopener">OHMC</a>; pronóstico de <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Esta herramienta no reemplaza los avisos oficiales: ante una emergencia, llamá al 100 y seguí las indicaciones de Defensa Civil.</p>
+</section>
+
+<!-- Historial de río, lluvia y dique (solo versión web) -->
+<section class="sec" id="historial">
+  <div class="sec-h">
+    <span class="tag">Historial · datos de APRHI vía OHMC</span>
+    <h2>Qué pasó con el río y la lluvia</h2>
+    <div class="actions">
+      <div class="seg" role="group" aria-label="Período">
+        <button data-rng="1">24 h</button>
+        <button data-rng="7" class="on">7 días</button>
+        <button data-rng="30">30 días</button>
+      </div>
+    </div>
+    <p class="hsum" id="hSummary">Cargando historial…</p>
+  </div>
+
+  <div class="hgrid">
+    <div class="hcard">
+      <div class="hcard-h">
+        <h3>Río: cuánto subió sobre lo normal</h3>
+        <div class="seg small" role="group" aria-label="Escala del río">
+          <button data-rmode="anom" class="on">Subida</button>
+          <button data-rmode="abs">Altura medida</button>
+        </div>
+      </div>
+      <p class="note" id="hRioNote">Diferencia entre la altura medida y la altura normal de cada sensor (mediana de 7 días). Las líneas punteadas son los umbrales de Alerta (+0,5 m) y Emergencia (+1 m).</p>
+      <div class="hchart" id="chRio"></div>
+      <div class="legend" id="lgRio"></div>
+    </div>
+
+    <div class="hcard">
+      <div class="hcard-h"><h3>Lluvia en la cuenca del dique</h3><span class="mono hbig" id="hRainTot"></span></div>
+      <p class="note">Barras: milímetros por hora (promedio de Cuenca Alta Colanchanga y Los Hornillos). Línea: lluvia acumulada en el período.</p>
+      <div class="hchart" id="chRain"></div>
+      <div class="legend"><span><i style="background:var(--water)"></i>mm por hora</span><span><i style="background:var(--ink)"></i>Acumulado</span></div>
+      <div class="tablewrap"><table id="tbRain"></table></div>
+    </div>
+
+    <div class="hcard">
+      <div class="hcard-h"><h3>Nivel del dique</h3><span class="mono hbig" id="hDamNow"></span></div>
+      <p class="note">Metros respecto del labio del vertedero. Por encima de 0 el dique vierte al río.</p>
+      <div class="hchart short" id="chDam"></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <h3>Crecidas detectadas en los últimos 30 días</h3>
+    <p class="note">El robot marca una crecida cuando algún sensor sube 25 cm o más sobre su nivel de los días previos.</p>
+    <div class="tablewrap"><table id="tbEvents"></table></div>
+  </div>
 </section>
 
 <!-- Situación actual -->
@@ -454,6 +539,53 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
     <span style="--c:#95b4dc">Neblina</span><span style="--c:#00E68A">Llovizna</span><span style="--c:#00AD5A">Leve</span><span style="--c:#EAF328">Moderada</span><span style="--c:#f7a600">Intensa</span><span style="--c:#FF2A0C">Muy intensa</span><span style="--c:#FF2A98">Granizo posible</span>
   </div>
   <p class="note">Radar RMA1 (SINARAME) y detección de núcleos convectivos y topes del <a href="https://webmet.ohmc.ar/" target="_blank" rel="noopener">OHMC</a>, imagen nueva cada 10 minutos. Satélite GOES-East, infrarrojo de 10,3 µm (NASA GIBS), con unos 20 minutos de demora: los colores marcan nubes muy altas y frías, típicas de tormentas profundas. El granizo se estima por la reflectividad del radar, no es una observación en el suelo. Los ecos fijos cerca del radar o alineados en rayos suelen ser reflejos del terreno. También: <a href="https://www.smn.gob.ar/radar" target="_blank" rel="noopener">radar del SMN</a>.</p>
+</section>
+
+<!-- Río en 3D con la crecida medida (solo versión web) -->
+<section class="sec" id="rio3d">
+  <div class="sec-h">
+    <span class="tag">Simulación con los datos medidos por los sensores</span>
+    <h2>El río en 3D: cuánto creció de verdad</h2>
+    <p>Los 15 km de río desde el dique hasta Unquillo, con los tres sensores de altura de APRHI. Mové la línea de tiempo o tocá una crecida para ver cómo subió el agua en cada tramo y cómo bajó la onda de crecida río abajo.</p>
+  </div>
+  <div class="r3-wrap">
+    <div class="r3-stage">
+      <div id="r3Canvas" role="img" aria-label="Modelo 3D del río Ceballos y el arroyo Saldán con la altura del agua medida por los sensores"></div>
+      <div class="r3-read" id="r3Read"><b id="r3When">Cargando…</b><div id="r3Vals"></div></div>
+    </div>
+    <aside class="stack" style="gap:18px">
+      <div class="stack" style="gap:6px">
+        <h3>Ir a</h3>
+        <div class="presets" id="r3Events"><button data-r3now class="on">Ahora</button></div>
+      </div>
+      <div class="stack" style="gap:6px">
+        <h3>Vista</h3>
+        <div class="seg" role="group" aria-label="Vista del río">
+          <button data-r3view="todo" class="on">Tramo</button>
+          <button data-r3view="0">Amuchástegui</button>
+          <button data-r3view="1">San José</button>
+          <button data-r3view="2">Unquillo</button>
+        </div>
+      </div>
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;font-size:.84rem;color:var(--ink-2)"><label for="r3Ex" style="font-size:inherit;color:inherit;font-weight:500">Exageración del agua</label><b class="mono" id="r3ExOut">×40</b></div>
+        <input type="range" id="r3Ex" min="10" max="80" step="5" value="40">
+      </div>
+      <div class="stack" style="gap:6px">
+        <h3>Color del agua</h3>
+        <div class="r3-scale"><span style="--c:#2f7fd0">normal</span><span style="--c:#25b9c9">+25 cm</span><span style="--c:#f0a020">+50 cm · Alerta</span><span style="--c:#d0102e">+1 m · Emergencia</span></div>
+      </div>
+      <p class="note">El nivel en cada punto se interpola entre los sensores. La altura del agua está exagerada para que se vea a esta escala y el ancho del cauce es ilustrativo: no es un cálculo hidráulico de la mancha de inundación. El sensor de Unquillo está aguas abajo de la unión con el río Unquillo, así que también suma esa crecida.</p>
+    </aside>
+  </div>
+  <div class="r3-time">
+    <button id="r3Play" aria-pressed="false">▶ Reproducir</button>
+    <div class="r3-track">
+      <svg id="r3Spark" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <input type="range" id="r3Time" min="0" max="1007" step="1" value="1007" aria-label="Momento a mostrar">
+    </div>
+    <span class="mono note" id="r3Range"></span>
+  </div>
 </section>
 
 <!-- Mapa 3D -->
@@ -595,9 +727,9 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
   </div>
   <div class="scale">
     <div data-lvl="ok"><b>Normal</b><span>No llueve en la cuenca y el pronóstico de 48 h usa menos de la mitad del colchón.</span><span class="do">Lectura diaria de nivel y pluviómetros.</span></div>
-    <div data-lvl="warn"><b>Atención</b><span>Llueve más de 5 mm/h, el suelo está saturado, el pronóstico ocupa más de la mitad del colchón o hay una tormenta fuerte (50 dBZ) a menos de 40 km.</span><span class="do">Pedir a APRHI que evalúe una descarga previa. Avisar a Defensa Civil municipal.</span></div>
-    <div data-lvl="bad"><b>Alerta</b><span>Más de 20 mm en una hora, el dique vierte, el pronóstico supera el colchón, el río sube 0,5 m en 30 minutos, o el radar marca granizo posible a menos de 20 km (o probable a menos de 40).</span><span class="do">Descarga previa, cierre de vados, sirenas y aviso a los barrios de alta amenaza.</span></div>
-    <div data-lvl="crit"><b>Emergencia</b><span>Más de 40 mm en una hora o 60 mm en tres, el dique vierte con más de 0,5 m de carga, el río sube 1 m en 30 minutos o hay granizo probable a menos de 10 km del dique.</span><span class="do">Evacuar las zonas de alta amenaza sobre el río Ceballos y el arroyo Saldán.</span></div>
+    <div data-lvl="warn"><b>Atención</b><span>Llueve más de 5 mm/h, el suelo está saturado, el pronóstico ocupa más de la mitad del colchón hay una tormenta fuerte (50 dBZ) a menos de 40 km o el río está 25 cm sobre lo normal.</span><span class="do">Pedir a APRHI que evalúe una descarga previa. Avisar a Defensa Civil municipal.</span></div>
+    <div data-lvl="bad"><b>Alerta</b><span>Más de 20 mm en una hora, el dique vierte, el pronóstico supera el colchón, el río está 50 cm sobre lo normal o sube 0,5 m en 30 minutos, o el radar marca granizo posible a menos de 20 km (o probable a menos de 40).</span><span class="do">Descarga previa, cierre de vados, sirenas y aviso a los barrios de alta amenaza.</span></div>
+    <div data-lvl="crit"><b>Emergencia</b><span>Más de 40 mm en una hora o 60 mm en tres, el dique vierte con más de 0,5 m de carga, el río está 1 m sobre lo normal o sube 1 m en 30 minutos, o hay granizo probable a menos de 10 km del dique.</span><span class="do">Evacuar las zonas de alta amenaza sobre el río Ceballos y el arroyo Saldán.</span></div>
   </div>
 </section>
 
@@ -932,6 +1064,9 @@ renderRain();render15();runSim();update();
 <script src="radar.js"></script>
 <script src="monitor/engine.js"></script>
 <script src="monitor/ui.js"></script>
+<script src="monitor/historia-ui.js"></script>
+<script src="rio3d-data.js"></script>
+<script src="rio3d.js"></script>
 
 </body>
 </html>

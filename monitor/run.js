@@ -140,11 +140,19 @@ async function main() {
     } else tormentas = { dato: null, fuente: "Radar RMA1 · núcleos convectivos (OHMC)", celdas: [] };
   } catch (e) { errores.push("Celdas de tormenta: " + e.message); }
 
+  // Historial de 30 días, altura normal del río y crecidas detectadas
+  let hist = null;
+  try {
+    hist = await require("./historia.js").construir({ serie, getJSON, sitio: SITIO, now, iso });
+    fs.writeFileSync(path.join(OUT, "historia.json"), JSON.stringify(hist));
+    console.log("Historial:", hist.recarga ? "recarga completa (30 días)" : "actualizado", "·", hist.eventos.length, "crecidas en 30 días");
+  } catch (e) { errores.push("Historial: " + e.message); }
+
   // 5. Evaluación
   const ev = motor.evaluar({
     nivelDique: dique && dique.activa ? dique.respectoVertedero : (dique ? dique.respectoVertedero : null),
     lluvia: cuenca, intensidad: cuenca.intensidad,
-    rios: rios.filter(r => r.activa).map(r => ({ nombre: r.nombre, subida30: r.subida30, subida24: r.subida24 })),
+    rios: rios.filter(r => r.activa).map(r => ({ nombre: r.nombre, subida30: r.subida30, subida24: r.subida24, sobreNormal: hist && hist.normal[r.id] != null ? +(r.nivel - hist.normal[r.id]).toFixed(2) : null })),
     pronostico,
     celdas: tormentas ? tormentas.celdas : [],
   });
@@ -187,6 +195,7 @@ async function main() {
     umbrales: motor.UMBRALES, errores,
     fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Open-Meteo · pronóstico", "Radar RMA1 · núcleos de tormenta (OHMC)", "Motor de alertas propio (umbrales provisorios)"],
   };
+  if (hist) { estado.ultimaCrecida = hist.eventos[0] || null; estado.normalRio = hist.normal; }
   fs.writeFileSync(path.join(OUT, "estado.json"), JSON.stringify(estado));
   console.log(`[${estado.generado}] ${ev.etiqueta} · cuenca ${cuenca.h1} mm/1h ${cuenca.h24} mm/24h ${cuenca.d5} mm/5d · dique ${dique ? dique.respectoVertedero : "?"} m · pron48 ${pronostico ? pronostico.h48 : "?"} mm · aviso ${aviso ? (aviso.enviado === undefined ? "simulado" : aviso.enviado) : "no"}`);
   ev.motivos.forEach(m => console.log("  -", m.nivel, m.texto));
