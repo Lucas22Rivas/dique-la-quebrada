@@ -240,8 +240,8 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
 .subscribe summary .muted{font-weight:400;margin-left:6px;font-size:.86rem}
 .subscribe ol{margin:12px 0;padding-left:1.2em;display:grid;gap:8px;font-size:.9rem;max-width:80ch}
 .subscribe code{font-family:var(--f-mono);font-size:.85rem;background:var(--water-soft);padding:2px 7px;border-radius:3px}
-.radar-box{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
-#radarMap{height:min(64vh,560px);min-height:360px;background:var(--sky)}
+.radar-box{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;min-height:420px}
+#radarMap{flex:1;height:min(64vh,560px);min-height:400px;background:var(--sky)}
 .radar-time{position:absolute;z-index:500;right:12px;top:12px;text-align:right;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:7px 11px;display:grid;gap:1px;box-shadow:0 6px 18px rgba(0,0,0,.12);pointer-events:none}
 .radar-time b{font-family:var(--f-display);font-size:1.25rem;font-weight:700;line-height:1}
 .radar-time span{font-size:.76rem;color:var(--muted)}
@@ -255,6 +255,15 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
 .rv-gauge span{font-size:8px;color:var(--muted)}
 .leaflet-container{font:inherit;background:var(--sky)}
 .leaflet-tooltip.rv-tip{font-weight:600;font-size:.78rem}
+.radar-wrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px}
+@media (max-width:960px){.radar-wrap{grid-template-columns:1fr}}
+.radar-side{display:grid;gap:22px;align-content:start}
+.cells li{grid-template-columns:auto minmax(0,1fr);font-size:.86rem}
+.cells li.muted{display:block}
+.hail-key{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:.84rem;color:var(--ink-2)}
+.hail-key li{border-left:4px solid var(--c);padding-left:9px}
+.hail-key b{color:var(--ink);margin-right:6px}
+.rv-hail span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--c);color:#fff;font:700 10px/1 var(--f-mono);box-shadow:0 0 0 2px #fff,0 2px 8px rgba(0,0,0,.35)}
 
 </style>
 
@@ -397,11 +406,11 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
   </div>
 </section>
 
-<!-- Radar de lluvia (solo versión web) -->
+<!-- Radar de lluvia, tormentas y granizo (solo versión web) -->
 <section class="sec" id="radar">
   <div class="sec-h">
-    <span class="tag">Radar RMA1 · Córdoba · OHMC</span>
-    <h2>¿Viene tormenta hacia la cuenca?</h2>
+    <span class="tag">Radar RMA1 · Córdoba · OHMC · satélite GOES-East</span>
+    <h2>Tormentas y granizo en tiempo real</h2>
     <div class="actions">
       <div class="seg" role="group" aria-label="Animación del radar">
         <button id="rvPrev" aria-label="Imagen anterior">◀</button>
@@ -409,17 +418,42 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
         <button id="rvNext" aria-label="Imagen siguiente">▶</button>
       </div>
     </div>
-    <p>Reflectividad máxima del radar meteorológico de Córdoba, a 35 km de Río Ceballos, en las últimas dos horas. Las tormentas de Sierras Chicas suelen entrar desde el oeste y el sur: si los ecos naranjas o rojos llegan a la cuenca del dique, la crecida puede bajar en menos de una hora.</p>
+    <p>Lluvia del radar meteorológico de Córdoba (a 35 km de Río Ceballos) en las últimas dos horas, con las celdas de tormenta que detecta y su riesgo de granizo. Las tormentas de Sierras Chicas suelen entrar desde el oeste y el sur: una celda fuerte dentro del anillo de 20 km puede hacer crecer el río en menos de una hora.</p>
   </div>
-  <div class="radar-box">
-    <div id="radarMap"></div>
-    <div class="radar-time"><b id="rvTime">Cargando radar…</b><span id="rvAge"></span></div>
-    <div class="radar-scrub" id="rvScrub" aria-hidden="true"></div>
+  <div class="radar-wrap">
+    <div class="radar-box">
+      <div id="radarMap"></div>
+      <div class="radar-time"><b id="rvTime">Cargando radar…</b><span id="rvAge"></span></div>
+      <div class="radar-scrub" id="rvScrub" aria-hidden="true"></div>
+    </div>
+    <aside class="radar-side">
+      <div class="stack" style="gap:2px">
+        <h3>Capas</h3>
+        <label class="lyr"><input type="checkbox" id="lyrRain" checked><i class="sw" style="background:linear-gradient(90deg,#00E68A,#EAF328,#FF2A0C)"></i>Lluvia (reflectividad)</label>
+        <label class="lyr"><input type="checkbox" id="lyrStorm" checked><i class="sw" style="background:#c8102e;opacity:.8"></i>Celdas de tormenta y granizo</label>
+        <label class="lyr"><input type="checkbox" id="lyrSat"><i class="sw" style="background:linear-gradient(90deg,#9aa4a8,#2f7fd0,#21c36a,#f4e04d)"></i>Satélite: topes de nube fríos</label>
+      </div>
+      <div class="stack" style="gap:8px">
+        <h3>Celdas cerca del dique</h3>
+        <ul class="reasons cells" id="rvCells"><li class="muted">Buscando celdas…</li></ul>
+        <span class="note" id="rvCellsTime"></span>
+      </div>
+      <div class="stack" style="gap:6px">
+        <h3>Cómo leer las celdas</h3>
+        <ul class="hail-key">
+          <li style="--c:#d9a400"><b>Tormenta</b> núcleo de menos de 50 dBZ</li>
+          <li style="--c:#e3640a"><b>Tormenta fuerte</b> 50 a 55 dBZ</li>
+          <li style="--c:#c8102e"><b>Granizo posible</b> 55 a 60 dBZ</li>
+          <li style="--c:#d6007a"><b>Granizo probable</b> 60 dBZ o más</li>
+        </ul>
+        <span class="note">"Tormenta severa" se suma cuando el tope supera los 12 km. Los anillos marcan 20 y 40 km desde el dique.</span>
+      </div>
+    </aside>
   </div>
-  <div class="radar-legend" aria-label="Escala de intensidad">
+  <div class="radar-legend" aria-label="Escala de intensidad de lluvia">
     <span style="--c:#95b4dc">Neblina</span><span style="--c:#00E68A">Llovizna</span><span style="--c:#00AD5A">Leve</span><span style="--c:#EAF328">Moderada</span><span style="--c:#f7a600">Intensa</span><span style="--c:#FF2A0C">Muy intensa</span><span style="--c:#FF2A98">Granizo posible</span>
   </div>
-  <p class="note">Radar RMA1 (SINARAME) publicado por el <a href="https://webmet.ohmc.ar/" target="_blank" rel="noopener">OHMC</a>, imagen nueva cada 10 minutos. Los ecos fijos muy cerca del radar o alineados en rayos suelen ser reflejos del terreno, no lluvia: conviene compararlos con los pluviómetros. También: <a href="https://www.smn.gob.ar/radar" target="_blank" rel="noopener">radar del SMN</a>.</p>
+  <p class="note">Radar RMA1 (SINARAME) y detección de núcleos convectivos y topes del <a href="https://webmet.ohmc.ar/" target="_blank" rel="noopener">OHMC</a>, imagen nueva cada 10 minutos. Satélite GOES-East, infrarrojo de 10,3 µm (NASA GIBS), con unos 20 minutos de demora: los colores marcan nubes muy altas y frías, típicas de tormentas profundas. El granizo se estima por la reflectividad del radar, no es una observación en el suelo. Los ecos fijos cerca del radar o alineados en rayos suelen ser reflejos del terreno. También: <a href="https://www.smn.gob.ar/radar" target="_blank" rel="noopener">radar del SMN</a>.</p>
 </section>
 
 <!-- Mapa 3D -->
@@ -557,13 +591,13 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
   <div class="sec-h">
     <span class="tag">Qué hacer en cada nivel</span>
     <h2>Escala de alerta</h2>
-    <p>Los mismos cuatro niveles del sistema de alerta temprana. <span class="web-only">El robot los calcula cada 10 minutos con los pluviómetros, el nivel del dique y los sensores del río.</span><span class="artifact-only">La lectura rápida los calcula comparando la lluvia pronosticada con la que el embalse puede absorber.</span> Los umbrales son provisorios.</p>
+    <p>Los mismos cuatro niveles del sistema de alerta temprana. <span class="web-only">El robot los calcula cada 10 minutos con los pluviómetros, el nivel del dique, los sensores del río y las celdas de tormenta del radar.</span><span class="artifact-only">La lectura rápida los calcula comparando la lluvia pronosticada con la que el embalse puede absorber.</span> Los umbrales son provisorios.</p>
   </div>
   <div class="scale">
     <div data-lvl="ok"><b>Normal</b><span>No llueve en la cuenca y el pronóstico de 48 h usa menos de la mitad del colchón.</span><span class="do">Lectura diaria de nivel y pluviómetros.</span></div>
-    <div data-lvl="warn"><b>Atención</b><span>Llueve más de 5 mm/h, el suelo está saturado o el pronóstico ocupa más de la mitad del colchón.</span><span class="do">Pedir a APRHI que evalúe una descarga previa. Avisar a Defensa Civil municipal.</span></div>
-    <div data-lvl="bad"><b>Alerta</b><span>Más de 20 mm en una hora, el dique vierte, el pronóstico supera el colchón o el río sube 0,5 m en 30 minutos.</span><span class="do">Descarga previa, cierre de vados, sirenas y aviso a los barrios de alta amenaza.</span></div>
-    <div data-lvl="crit"><b>Emergencia</b><span>Más de 40 mm en una hora o 60 mm en tres, el dique vierte con más de 0,5 m de carga o el río sube 1 m en 30 minutos.</span><span class="do">Evacuar las zonas de alta amenaza sobre el río Ceballos y el arroyo Saldán.</span></div>
+    <div data-lvl="warn"><b>Atención</b><span>Llueve más de 5 mm/h, el suelo está saturado, el pronóstico ocupa más de la mitad del colchón o hay una tormenta fuerte (50 dBZ) a menos de 40 km.</span><span class="do">Pedir a APRHI que evalúe una descarga previa. Avisar a Defensa Civil municipal.</span></div>
+    <div data-lvl="bad"><b>Alerta</b><span>Más de 20 mm en una hora, el dique vierte, el pronóstico supera el colchón, el río sube 0,5 m en 30 minutos, o el radar marca granizo posible a menos de 20 km (o probable a menos de 40).</span><span class="do">Descarga previa, cierre de vados, sirenas y aviso a los barrios de alta amenaza.</span></div>
+    <div data-lvl="crit"><b>Emergencia</b><span>Más de 40 mm en una hora o 60 mm en tres, el dique vierte con más de 0,5 m de carga, el río sube 1 m en 30 minutos o hay granizo probable a menos de 10 km del dique.</span><span class="do">Evacuar las zonas de alta amenaza sobre el río Ceballos y el arroyo Saldán.</span></div>
   </div>
 </section>
 

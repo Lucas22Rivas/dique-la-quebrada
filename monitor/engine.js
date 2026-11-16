@@ -13,6 +13,7 @@
     alerta: { lluvia1h: 20, lluvia3h: 30, fraccion3h: 0.6, subidaRio: 0.5, intensidad: 30 },
     atencion: { lluvia1h: 5, fraccionPron48: 0.5, intensidad: 10 },
     amc: { seco: 36, saturado: 53 },
+    tormenta: { emergencia: { dbz: 60, km: 10 }, alerta: [{ dbz: 55, km: 20 }, { dbz: 60, km: 40 }], atencion: { dbz: 50, km: 40 } },
   };
   const NIVELES = ["normal", "atencion", "alerta", "emergencia"];
   const ETIQUETA = { normal: "Normal", atencion: "Atención", alerta: "Alerta", emergencia: "Emergencia" };
@@ -34,6 +35,15 @@
     if (e.lluvia.h1 >= UMBRALES.emergencia.lluvia1h) subir(3, f(e.lluvia.h1) + " mm en la última hora en la cuenca");
     if (e.lluvia.h3 >= UMBRALES.emergencia.lluvia3h) subir(3, f(e.lluvia.h3) + " mm en las últimas 3 horas en la cuenca");
     (e.rios || []).forEach(r => { if (r.subida30 != null && r.subida30 >= UMBRALES.emergencia.subidaRio) subir(3, r.nombre + ": el río subió " + f(r.subida30, 2) + " m en 30 min"); });
+    // Celdas de tormenta del radar (distancia al dique)
+    const T = UMBRALES.tormenta, cel = (e.celdas || []).slice().sort((a, b) => a.dist - b.dist);
+    const desc = c => (c.maxDbz >= 60 ? "granizo probable" : c.maxDbz >= 55 ? "granizo posible" : "tormenta fuerte") + " a " + f(c.dist) + " km al " + c.dir + " del dique (" + f(c.maxDbz) + " dBZ" + (c.topKm ? ", tope " + f(c.topKm, 1) + " km" : "") + ")";
+    const em = cel.find(c => c.maxDbz >= T.emergencia.dbz && c.dist <= T.emergencia.km);
+    const al = !em && cel.find(c => T.alerta.some(u => c.maxDbz >= u.dbz && c.dist <= u.km));
+    const at = !em && !al && cel.find(c => c.maxDbz >= T.atencion.dbz && c.dist <= T.atencion.km);
+    if (em) subir(3, "Radar: " + desc(em));
+    else if (al) subir(2, "Radar: " + desc(al));
+    else if (at) subir(1, "Radar: " + desc(at));
     // Alerta
     if (d != null && d > 0 && d <= UMBRALES.emergencia.vertidoM) subir(2, "El dique está vertiendo (" + f(126 * d ** 1.5) + " m³/s al río)");
     if (e.lluvia.h1 >= UMBRALES.alerta.lluvia1h && e.lluvia.h1 < UMBRALES.emergencia.lluvia1h) subir(2, f(e.lluvia.h1) + " mm en la última hora en la cuenca");

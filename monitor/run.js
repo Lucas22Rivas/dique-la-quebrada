@@ -116,12 +116,37 @@ async function main() {
       horario: fut.slice(0, 48).map(x => [iso(x.t), r1(x.p), x.pr]) };
   } catch (e) { errores.push("Pronóstico: " + e.message); }
 
+  // 4b. Celdas de tormenta del radar RMA1 (OHMC): núcleos convectivos, topes y riesgo de granizo
+  let tormentas = null;
+  try {
+    const W = "https://webmet.ohmc.ar/api/v1";
+    const recs = (await getJSON(`${W}/tops-cores?time_from=${iso(now - 30 * 60e3)}&time_to=${iso(now + 6e5)}&radar_codes=RMA1`)) || [];
+    const ok = recs.filter(r => r.status === "available" && (r.vol_nr === "01" || !r.vol_nr)).sort((a, b) => Date.parse(b.observation_time) - Date.parse(a.observation_time));
+    const DQ = [-31.1495, -64.3421], rad = x => x * Math.PI / 180;
+    const dist = (a, b) => { const h = Math.sin(rad(b[0] - a[0]) / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(rad(b[1] - a[1]) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+    const rumbo = (a, b) => { const y = Math.sin(rad(b[1] - a[1])) * Math.cos(rad(b[0])), x = Math.cos(rad(a[0])) * Math.sin(rad(b[0])) - Math.sin(rad(a[0])) * Math.cos(rad(b[0])) * Math.cos(rad(b[1] - a[1])); return ["N", "NE", "E", "SE", "S", "SO", "O", "NO"][Math.round(((Math.atan2(y, x) * 180 / Math.PI + 360) % 360) / 45) % 8]; };
+    if (ok.length) {
+      const rec = ok[0], fc = await getJSON(`${W}/tops-cores/${rec.id}/features`);
+      const fs2 = (fc && fc.features) || [];
+      const tops = fs2.filter(x => x.properties && x.properties.type === "top" && x.geometry.type === "Point");
+      const celdas = fs2.filter(x => x.properties && x.properties.type === "blob" && x.geometry.type === "Polygon").map(b => {
+        const ring = b.geometry.coordinates[0], c = ring.reduce((a, p) => [a[0] + p[1] / ring.length, a[1] + p[0] / ring.length], [0, 0]);
+        let top = null, best = Infinity;
+        tops.forEach(t => { const d = (t.geometry.coordinates[1] - c[0]) ** 2 + (t.geometry.coordinates[0] - c[1]) ** 2; if (d < best) { best = d; top = t.properties.altitude_m; } });
+        const maxDbz = b.properties.max_dbz != null ? b.properties.max_dbz : b.properties.intensity_dbz;
+        return { lat: +c[0].toFixed(4), lon: +c[1].toFixed(4), maxDbz, topKm: top != null && best < 0.01 ? +(top / 1000).toFixed(1) : null, dist: +dist(DQ, c).toFixed(1), dir: rumbo(DQ, c) };
+      }).filter(c => c.dist <= 120).sort((a, b) => a.dist - b.dist);
+      tormentas = { dato: iso(Date.parse(rec.observation_time)), fuente: "Radar RMA1 · núcleos convectivos (OHMC)", celdas: celdas.slice(0, 12) };
+    } else tormentas = { dato: null, fuente: "Radar RMA1 · núcleos convectivos (OHMC)", celdas: [] };
+  } catch (e) { errores.push("Celdas de tormenta: " + e.message); }
+
   // 5. Evaluación
   const ev = motor.evaluar({
     nivelDique: dique && dique.activa ? dique.respectoVertedero : (dique ? dique.respectoVertedero : null),
     lluvia: cuenca, intensidad: cuenca.intensidad,
     rios: rios.filter(r => r.activa).map(r => ({ nombre: r.nombre, subida30: r.subida30, subida24: r.subida24 })),
     pronostico,
+    celdas: tormentas ? tormentas.celdas : [],
   });
 
   // 6. Estado anterior (desde el sitio publicado) para detectar cambios
@@ -157,10 +182,10 @@ async function main() {
 
   const estado = {
     generado: iso(now), sitio: SITIO, canalAvisos: NTFY,
-    alerta: ev, cuenca, pluviometros: lluvias, dique, rios, pronostico, historial,
+    alerta: ev, cuenca, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
     ultimoAviso: aviso && aviso.enviado ? iso(now) : (previo && previo.ultimoAviso) || null, aviso,
     umbrales: motor.UMBRALES, errores,
-    fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Open-Meteo · pronóstico", "Motor de alertas propio (umbrales provisorios)"],
+    fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Open-Meteo · pronóstico", "Radar RMA1 · núcleos de tormenta (OHMC)", "Motor de alertas propio (umbrales provisorios)"],
   };
   fs.writeFileSync(path.join(OUT, "estado.json"), JSON.stringify(estado));
   console.log(`[${estado.generado}] ${ev.etiqueta} · cuenca ${cuenca.h1} mm/1h ${cuenca.h24} mm/24h ${cuenca.d5} mm/5d · dique ${dique ? dique.respectoVertedero : "?"} m · pron48 ${pronostico ? pronostico.h48 : "?"} mm · aviso ${aviso ? (aviso.enviado === undefined ? "simulado" : aviso.enviado) : "no"}`);
