@@ -5,6 +5,7 @@
 "use strict";
 const fs = require("fs"), path = require("path");
 const motor = require("./engine.js");
+const { ohmcFetch } = require("./ohmc.js");
 
 const SITIO = "https://lucas22rivas.github.io/dique-la-quebrada/";
 const NTFY = "https://ntfy.sh/dique-la-quebrada-4ax1kuwob5";
@@ -35,7 +36,7 @@ const diaLocal = t => new Date(t - 3 * 3600e3).toISOString().slice(0, 10); // C�
 async function getJSON(url, tries = 3) {
   for (let i = 0; i < tries; i++) {
     try {
-      const r = await fetch(url, { headers: { "User-Agent": "monitor-dique-la-quebrada (+" + SITIO + ")" }, signal: AbortSignal.timeout(30000) });
+      const r = await ohmcFetch(url, { headers: { "User-Agent": "monitor-dique-la-quebrada (+" + SITIO + ")" }, signal: AbortSignal.timeout(30000) });
       if (r.ok) return await r.json();
       if (r.status === 404) return null;
       if (r.status === 401 || r.status === 403) { const err = new Error(r.headers.get("X-Public-Session-Required") ? "el OHMC exige ahora una sesión de su visor público (401)" : "acceso denegado (" + r.status + ")"); err.sinReintento = true; throw err; }

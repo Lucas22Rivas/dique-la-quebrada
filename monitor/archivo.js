@@ -4,6 +4,7 @@
 "use strict";
 const fs = require("fs"), path = require("path");
 const OHMC = "https://estaciones-fe.ohmc.ar/api/v1/public";
+const { ohmcFetch } = require("./ohmc.js");
 const SERIES = [
   { k: "p58", id: 58, tipo: 4, desde: "2021-01-01", agg: "suma", esc: 10 },
   { k: "p93", id: 93, tipo: 4, desde: "2021-01-01", agg: "suma", esc: 10 },
@@ -20,7 +21,7 @@ const pausa = ms => new Promise(r => setTimeout(r, ms));
 
 async function getJSON(url) {
   for (let i = 0; i < 4; i++) {
-    try { const r = await fetch(url, { headers: { "User-Agent": "monitor-dique-la-quebrada (+https://lucas22rivas.github.io/dique-la-quebrada/)" }, signal: AbortSignal.timeout(60000) }); if (r.ok) return await r.json(); if (r.status === 404) return null; } catch (e) { }
+    try { const r = await ohmcFetch(url, { signal: AbortSignal.timeout(60000) }); if (r.ok) return await r.json(); if (r.status === 404) return null; } catch (e) { }
     await pausa(3000 * (i + 1));
   }
   throw new Error("OHMC no responde: " + url);
