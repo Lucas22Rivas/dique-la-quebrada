@@ -337,6 +337,15 @@ td.mh.nd{color:var(--muted);background:transparent}
 .cam-strip span{position:absolute;right:4px;bottom:3px;font:600 10px/1 var(--f-mono);color:#fff;background:rgba(0,0,0,.55);padding:2px 4px;border-radius:2px}
 .cam-demo{background:var(--warn-bg);border:1px solid var(--warn);color:var(--ink);border-radius:var(--r);padding:10px 14px;font-size:.88rem}
 .cam-demo b{color:var(--warn)}
+/* Red de estaciones */
+.red-wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px}
+@media (max-width:960px){.red-wrap{grid-template-columns:1fr}}
+#redMap{height:min(66vh,560px);min-height:380px;border-radius:var(--r);border:1px solid var(--line);background:var(--sky)}
+.red-ro{grid-template-columns:1fr 1fr 1fr!important;margin:0}
+.red-ro .ro:nth-child(n){border-top:0}
+.red-mk{display:grid;place-items:center}
+.red-mk .tri{width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid var(--c);filter:drop-shadow(0 0 1px #fff) drop-shadow(0 1px 2px rgba(0,0,0,.4))}
+.red-mk .rect{width:14px;height:14px;background:var(--c);transform:rotate(45deg);box-shadow:0 0 0 1.5px #fff,0 2px 4px rgba(0,0,0,.4)}
 
 </style>
 
@@ -347,6 +356,7 @@ td.mh.nd{color:var(--muted);background:transparent}
       <a href="#ahora">Ahora</a>
       <a class="web-only" href="#live">En vivo</a>
       <a class="web-only" href="#camara">Cámara</a>
+      <a class="web-only" href="#red">Red</a>
       <a class="web-only" href="#historial">Historial</a>
       <a class="web-only" href="#radar">Radar</a>
       <a class="web-only" href="#rio3d">Río 3D</a>
@@ -465,6 +475,30 @@ td.mh.nd{color:var(--muted);background:transparent}
       <p class="note">Orus mide la altura del agua y la velocidad de la superficie con video para calcular el caudal. Toma una foto cada 10 minutos y graba videos de 30 segundos cuando el río sube. Las imágenes se actualizan solas.</p>
     </aside>
   </div>
+</section>
+
+<!-- Red de estaciones en vivo (solo versión web) -->
+<section class="sec" id="red" aria-live="polite">
+  <div class="sec-h">
+    <span class="tag"><span class="dot" id="redDot"></span>Red en vivo · OHMC (APRHI y Laboratorio de Hidráulica)</span>
+    <h2>Pluviómetros y sensores del corredor</h2>
+    <p class="note" id="redSub">Cargando la red de estaciones…</p>
+  </div>
+  <div class="red-wrap">
+    <div id="redMap"></div>
+    <aside class="stack" style="gap:16px">
+      <div class="readout red-ro" id="redTiles"></div>
+      <div class="stack" style="gap:4px">
+        <h3>Lluvia ahora</h3>
+        <div class="tablewrap"><table id="redLluvia"></table></div>
+      </div>
+      <div class="stack" style="gap:4px">
+        <h3>Nivel de río y dique</h3>
+        <div class="tablewrap"><table id="redRio"></table></div>
+      </div>
+    </aside>
+  </div>
+  <p class="note">Cada estación reporta cada 10 minutos; el robot las lee y actualiza este panel a ese ritmo. Los puntos azules miden lluvia (más fuerte = llueve más ahora); los triángulos, altura de río; el rombo, el dique. Tocá un punto para ver su dato. Fuente: <a href="https://estaciones-fe.ohmc.ar/" target="_blank" rel="noopener">OHMC</a>.</p>
 </section>
 
 <!-- Historial de río, lluvia y dique (solo versión web) -->
@@ -1199,16 +1233,17 @@ renderRain();render15();runSim();update();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-<script src="mapdata.js?v=mwipuqll"></script>
-<script src="map3d.js?v=mwipuqll"></script>
+<script src="mapdata.js?v=mwirjmbr"></script>
+<script src="map3d.js?v=mwirjmbr"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="radar.js?v=mwipuqll"></script>
-<script src="monitor/engine.js?v=mwipuqll"></script>
-<script src="monitor/ui.js?v=mwipuqll"></script>
-<script src="monitor/historia-ui.js?v=mwipuqll"></script>
-<script src="monitor/camara.js?v=mwipuqll"></script>
-<script src="rio3d-data.js?v=mwipuqll"></script>
-<script src="rio3d.js?v=mwipuqll"></script>
+<script src="radar.js?v=mwirjmbr"></script>
+<script src="monitor/engine.js?v=mwirjmbr"></script>
+<script src="monitor/ui.js?v=mwirjmbr"></script>
+<script src="monitor/historia-ui.js?v=mwirjmbr"></script>
+<script src="monitor/camara.js?v=mwirjmbr"></script>
+<script src="monitor/red-ui.js?v=mwirjmbr"></script>
+<script src="rio3d-data.js?v=mwirjmbr"></script>
+<script src="rio3d.js?v=mwirjmbr"></script>
 
 </body>
 </html>

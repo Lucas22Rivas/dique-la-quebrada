@@ -31,7 +31,10 @@ async function leer({ now, iso, outDir }) {
     return r;
   };
   // 1. Iniciar sesión (el token no se guarda en ningún lado)
-  const tok = await (await pedir("token/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: U, password: P }) })).json();
+  const rlogin = await fetch(API + "token/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: U, password: P }), signal: AbortSignal.timeout(60000) });
+  if (rlogin.status === 401) return { configurado: false, nota: "Las credenciales de Orus no entran en producción (parecen ser de la cuenta de prueba / sandbox)." };
+  if (!rlogin.ok) return { configurado: true, error: "Login de Orus falló (" + rlogin.status + ")." };
+  const tok = await rlogin.json();
   const auth = { Authorization: "Bearer " + tok.access };
   const get = async u => (await pedir(u, { headers: auth })).json();
 

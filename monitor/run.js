@@ -189,6 +189,13 @@ async function main() {
   let evap = null;
   try { const et = await serie(93, 30, 7); if (et.length > 48) evap = +(et.reduce((s, p) => s + p.v, 0) / (et.length / 24) * (et.length > 0 ? 1 : 0)).toFixed(1); } catch (e) { errores.push("Evapotranspiración: " + e.message); }
 
+  // Red de estaciones en vivo del corredor de Sierras Chicas (OHMC)
+  try {
+    const red = await require("./red.js").leer({ now, iso, getJSON });
+    fs.writeFileSync(path.join(OUT, "red.json"), JSON.stringify(red));
+    console.log("Red:", red.error || (red.estaciones.filter(e => e.activa).length + "/" + red.estaciones.length + " estaciones activas"));
+  } catch (e) { errores.push("Red de estaciones: " + e.message); }
+
   // 5. Evaluación
   const ev = motor.evaluar({
     nivelDique: dique && dique.activa ? dique.respectoVertedero : (dique ? dique.respectoVertedero : null),
