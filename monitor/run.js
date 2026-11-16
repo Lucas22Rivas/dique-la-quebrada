@@ -108,6 +108,20 @@ async function main() {
     } catch (e) { errores.push("Río " + r.nombre + ": " + e.message); rios.push({ ...r, activa: false }); }
   }
 
+  // 3b. Cámara y sensor Orus de Puente San José (si hay credenciales)
+  let camara = null;
+  try {
+    camara = await require("./orus.js").leer({ now, iso, outDir: OUT });
+    fs.mkdirSync(path.join(OUT, "camara"), { recursive: true });
+    fs.writeFileSync(path.join(OUT, "camara", "camara.json"), JSON.stringify(camara));
+    if (camara.configurado && camara.ultimo && camara.ultimo.nivel != null) {
+      const fresca = now - Date.parse(camara.ultimo.t) < 60 * 60e3;
+      rios.push({ id: "orus", nombre: "Río Ceballos · Puente San José (cámara Orus)", nivel: camara.ultimo.nivel, dato: camara.ultimo.t, activa: fresca, subida30: camara.ultimo.subida30, caudal: camara.ultimo.caudal,
+        serie: camara.serie.filter(x => Date.parse(x[0]) > now - 24 * 36e5).map(x => [x[0], x[1]]) });
+    }
+    console.log("Orus:", camara.configurado ? (camara.error || (camara.estacion.nombre + " · " + (camara.ultimo ? camara.ultimo.nivel + " m, " + camara.ultimo.caudal + " m³/s" : "sin lecturas") + " · " + camara.fotos.length + " fotos" + (camara.video ? " · video" : ""))) : camara.nota);
+  } catch (e) { errores.push("Cámara Orus: " + e.message); camara = { configurado: true, error: e.message }; }
+
   // 4. Pronóstico
   let pronostico = null;
   try {
@@ -178,7 +192,7 @@ async function main() {
   const ev = motor.evaluar({
     nivelDique: dique && dique.activa ? dique.respectoVertedero : (dique ? dique.respectoVertedero : null),
     lluvia: cuenca, intensidad: cuenca.intensidad,
-    rios: rios.filter(r => r.activa).map(r => ({ nombre: r.nombre, subida30: r.subida30, subida24: r.subida24, sobreNormal: hist && hist.normal[r.id] != null ? +(r.nivel - hist.normal[r.id]).toFixed(2) : null })),
+    rios: rios.filter(r => r.activa).map(r => ({ nombre: r.nombre, subida30: r.subida30, subida24: r.subida24, sobreNormal: r.id === "orus" ? (camara && camara.normal != null ? +(r.nivel - camara.normal).toFixed(2) : null) : hist && hist.normal[r.id] != null ? +(r.nivel - hist.normal[r.id]).toFixed(2) : null })),
     pronostico,
     celdas: tormentas ? tormentas.celdas : [],
   });
@@ -216,7 +230,7 @@ async function main() {
 
   const estado = {
     generado: iso(now), sitio: SITIO, canalAvisos: NTFY,
-    alerta: ev, cuenca, evapotranspiracion: evap, modelo: { cn: ev.cn, api: ev.api, formula: "CN = 34 + 0,32 × API; escurrimiento mínimo 3,5 %" }, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
+    alerta: ev, cuenca, evapotranspiracion: evap, camara: camara && { configurado: camara.configurado, error: camara.error || null, ultimo: camara.ultimo || null, estacion: camara.estacion ? camara.estacion.nombre : null }, modelo: { cn: ev.cn, api: ev.api, formula: "CN = 34 + 0,32 × API; escurrimiento mínimo 3,5 %" }, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
     ultimoAviso: aviso && aviso.enviado ? iso(now) : (previo && previo.ultimoAviso) || null, aviso,
     umbrales: motor.UMBRALES, errores,
     fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Open-Meteo · pronóstico", "Radar RMA1 · núcleos de tormenta (OHMC)", "Motor de alertas propio (umbrales provisorios)"],

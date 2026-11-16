@@ -320,6 +320,21 @@ td.mh.nd{color:var(--muted);background:transparent}
 .topdias li{display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:8px;padding:5px 0;border-bottom:1px solid var(--line-2)}
 .topdias li:first-child b{color:var(--crit)}
 @media (max-width:900px){.hcard .cols{grid-template-columns:1fr!important}}
+/* Cámara Orus */
+.cam-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px}
+@media (max-width:960px){.cam-wrap{grid-template-columns:1fr}}
+.cam-stage{position:relative;margin:0;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#0a1216;aspect-ratio:16/9;max-width:100%}
+.cam-stage img,.cam-stage video{position:absolute;inset:0;width:100%;height:100%;max-width:100%;object-fit:contain;background:#0a1216}
+.cam-empty{position:absolute;inset:0;display:grid;place-items:center;color:#9fb3ba;font-size:.95rem;padding:20px;text-align:center}
+.cam-cap{position:absolute;left:12px;bottom:12px;background:rgba(10,18,22,.82);color:#e9f1f3;border-radius:var(--r);padding:7px 11px;display:grid;gap:1px;font-size:.8rem;pointer-events:none;max-width:calc(100% - 24px)}
+.cam-cap b{font-family:var(--f-display);font-size:1.15rem;font-weight:700;text-transform:capitalize}
+.cam-ro{grid-template-columns:1fr 1fr!important;margin:0}
+.cam-ro .ro:nth-child(3){border-top:0}
+.cam-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cam-strip button{padding:0;border-radius:4px;overflow:hidden;position:relative;border:2px solid transparent;background:#0a1216}
+.cam-strip button.on{border-color:var(--water)}
+.cam-strip img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+.cam-strip span{position:absolute;right:4px;bottom:3px;font:600 10px/1 var(--f-mono);color:#fff;background:rgba(0,0,0,.55);padding:2px 4px;border-radius:2px}
 
 </style>
 
@@ -329,6 +344,7 @@ td.mh.nd{color:var(--muted);background:transparent}
     <nav class="nav" aria-label="Secciones">
       <a href="#ahora">Ahora</a>
       <a class="web-only" href="#live">En vivo</a>
+      <a class="web-only" href="#camara">Cámara</a>
       <a class="web-only" href="#historial">Historial</a>
       <a class="web-only" href="#radar">Radar</a>
       <a class="web-only" href="#rio3d">Río 3D</a>
@@ -416,6 +432,36 @@ td.mh.nd{color:var(--muted);background:transparent}
     <p class="note">También se puede seguir desde el navegador en <a href="https://ntfy.sh/dique-la-quebrada-4ax1kuwob5" target="_blank" rel="noopener">ntfy.sh/dique-la-quebrada-4ax1kuwob5</a>. El canal es público: cualquiera con el nombre puede leerlo.</p>
   </details>
   <p class="note">Fuentes: pluviómetros, nivel del dique y sensores de río de APRHI publicados por el <a href="https://estaciones-fe.ohmc.ar/" target="_blank" rel="noopener">OHMC</a>; pronóstico de <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Esta herramienta no reemplaza los avisos oficiales: ante una emergencia, llamá al 100 y seguí las indicaciones de Defensa Civil.</p>
+</section>
+
+<!-- Cámara Orus de Puente San José (solo versión web) -->
+<section class="sec" id="camara">
+  <div class="sec-h">
+    <span class="tag"><span class="dot" id="camDot"></span>Cámara Orus · Puente San José · Río Ceballos</span>
+    <h2>El río en el puente, ahora</h2>
+    <div class="actions">
+      <div class="seg" role="group" aria-label="Vista de la cámara">
+        <button data-cam="foto" class="on">Última foto</button>
+        <button data-cam="secuencia">Última hora</button>
+        <button data-cam="video">Último video</button>
+      </div>
+    </div>
+    <p class="note" id="camSub">Cargando la cámara…</p>
+  </div>
+  <div class="cam-wrap">
+    <figure class="cam-stage">
+      <img id="camImg" alt="Foto más reciente del río Ceballos en el Puente San José tomada por la cámara Orus" hidden>
+      <video id="camVid" muted loop playsinline controls preload="none" hidden></video>
+      <div class="cam-empty" id="camEmpty">Esperando la primera imagen de la cámara.</div>
+      <figcaption class="cam-cap"><b id="camWhen">–</b><span id="camWhat"></span></figcaption>
+    </figure>
+    <aside class="stack" style="gap:16px">
+      <div class="readout cam-ro" id="camRo"></div>
+      <div class="hchart short" id="camChart"></div>
+      <div class="cam-strip" id="camStrip" aria-label="Fotos de la última hora"></div>
+      <p class="note">Orus mide la altura del agua y la velocidad de la superficie con video para calcular el caudal. Toma una foto cada 10 minutos y graba videos de 30 segundos cuando el río sube. Las imágenes se actualizan solas.</p>
+    </aside>
+  </div>
 </section>
 
 <!-- Historial de río, lluvia y dique (solo versión web) -->
@@ -1150,15 +1196,16 @@ renderRain();render15();runSim();update();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-<script src="mapdata.js?v=mwio75w1"></script>
-<script src="map3d.js?v=mwio75w1"></script>
+<script src="mapdata.js?v=mwiorin5"></script>
+<script src="map3d.js?v=mwiorin5"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="radar.js?v=mwio75w1"></script>
-<script src="monitor/engine.js?v=mwio75w1"></script>
-<script src="monitor/ui.js?v=mwio75w1"></script>
-<script src="monitor/historia-ui.js?v=mwio75w1"></script>
-<script src="rio3d-data.js?v=mwio75w1"></script>
-<script src="rio3d.js?v=mwio75w1"></script>
+<script src="radar.js?v=mwiorin5"></script>
+<script src="monitor/engine.js?v=mwiorin5"></script>
+<script src="monitor/ui.js?v=mwiorin5"></script>
+<script src="monitor/historia-ui.js?v=mwiorin5"></script>
+<script src="monitor/camara.js?v=mwiorin5"></script>
+<script src="rio3d-data.js?v=mwiorin5"></script>
+<script src="rio3d.js?v=mwiorin5"></script>
 
 </body>
 </html>
