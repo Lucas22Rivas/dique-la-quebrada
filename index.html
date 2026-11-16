@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Monitoreo preventivo de crecidas del Dique La Quebrada (Río Ceballos, Córdoba): nivel, lluvias, radar en vivo, simulador y mapa 3D de zonas inundables.">
+<meta name="description" content="Monitoreo preventivo de crecidas del Dique La Quebrada (Río Ceballos, Córdoba): pluviómetros en tiempo real, alarma, radar, simulador y mapa 3D de zonas inundables.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}.leaflet-container{font:inherit}</style>
 </head>
@@ -124,6 +124,25 @@ ol.limits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
 .sw.ln{height:4px}
 .sw.pt{width:12px;height:12px;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Panel de monitoreo en tiempo real */
+.live{border-width:2px}
+.live[data-level="alerta"]{border-color:var(--bad)}
+.live[data-level="emergencia"]{border-color:var(--crit);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--crit) 25%,transparent)}}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px;background:var(--muted)}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.crit{background:var(--crit)}
+.live-banner{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:16px;align-items:center;border-left:6px solid var(--line);padding:12px 16px;background:var(--bg);border-radius:8px}
+@media (max-width:640px){.live-banner{grid-template-columns:1fr}}
+.lb-level{font-family:var(--f-display);font-size:clamp(1.8rem,5vw,2.6rem);font-weight:800;line-height:1}
+.lb-reasons{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:.92rem}
+.live .tile svg{margin-top:4px;max-width:100%}
+.hist{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:.88rem}
+.subscribe{border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.subscribe summary{cursor:pointer}
+.subscribe ol{margin:10px 0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
+.subscribe code{font-family:var(--f-mono);background:var(--water-soft);padding:1px 6px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.live[data-level="emergencia"]{animation:none}}
+
 </style>
 
 <div class="wrap">
@@ -146,8 +165,8 @@ ol.limits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
   <div class="levelbox panel" style="padding:12px 14px">
     <div style="display:grid;gap:2px">
       <label for="curLevel">Nivel actual (m respecto del vertedero)</label>
-      <input type="number" id="curLevel" step="0.05" value="-1.40">
-      <span class="note">Sensor APRHI, 14/11/2026</span>
+      <input type="number" id="curLevel" step="0.05" value="-1.24">
+      <span class="note" id="levelNote">Sensor APRHI (OHMC), 15/11/2026 21:20</span>
     </div>
     <div style="display:grid;gap:2px">
       <label for="curDate">Fecha</label>
@@ -159,11 +178,56 @@ ol.limits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
 <!-- Estado -->
 <section class="grid g4" id="status" aria-label="Estado actual"></section>
 
+<!-- Monitoreo en tiempo real (solo versión web) -->
+<section class="panel live" id="live" style="display:grid;gap:16px" aria-live="polite">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-start">
+    <div style="display:grid;gap:4px;min-width:0">
+      <span class="eyebrow"><span class="dot" id="liveDot"></span>Monitoreo en tiempo real · pluviómetros APRHI vía OHMC</span>
+      <h2 id="liveTitle">Cargando datos en vivo…</h2>
+      <p class="note" id="liveSub">Se actualiza solo cada 10 minutos.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="alarmBtn" aria-pressed="false">Activar alarma en esta pantalla</button>
+      <button id="alarmTest">Probar sonido</button>
+    </div>
+  </div>
+  <div class="live-banner" id="liveBanner">
+    <div class="lb-level" id="liveLevel">–</div>
+    <ul class="lb-reasons" id="liveReasons"><li>Esperando el primer dato…</li></ul>
+  </div>
+  <div class="grid g4" id="liveTiles"></div>
+  <div class="grid g2">
+    <div style="display:grid;gap:8px;min-width:0">
+      <h3>Pluviómetros</h3>
+      <div class="tablewrap"><table id="livePluvios"></table></div>
+    </div>
+    <div style="display:grid;gap:8px;min-width:0">
+      <h3>Altura del río en Río Ceballos y Unquillo</h3>
+      <div class="tablewrap"><table id="liveRios"></table></div>
+      <p class="note">Altura sobre el fondo del cauce en cada sensor. Subidas de 0,5 m en 30 minutos disparan Alerta y de 1 m, Emergencia (umbrales provisorios).</p>
+    </div>
+  </div>
+  <details class="subscribe">
+    <summary><b>Recibir las alertas en el celular</b> (gratis, sin registrarse)</summary>
+    <ol>
+      <li>Instalá la app <b>ntfy</b> (Android: Google Play o F-Droid; iPhone: App Store).</li>
+      <li>Tocá <b>+</b> y suscribite al canal <code id="ntfyTopic">dique-la-quebrada-4ax1kuwob5</code> <button id="copyTopic" style="padding:2px 8px">Copiar</button></li>
+      <li>Listo: el robot avisa cuando la alerta sube (Atención, Alerta, Emergencia), repite cada 30 minutos en Emergencia y avisa cuando todo vuelve a Normal. En Android conviene permitir que ntfy suene aunque el teléfono esté en silencio.</li>
+    </ol>
+    <p class="note">También se puede seguir desde el navegador en <a id="ntfyLink" href="https://ntfy.sh/dique-la-quebrada-4ax1kuwob5" target="_blank" rel="noopener">ntfy.sh/dique-la-quebrada-4ax1kuwob5</a>. El canal es público: cualquiera con el nombre puede leerlo.</p>
+  </details>
+  <div style="display:grid;gap:6px">
+    <h3>Últimos cambios de alerta</h3>
+    <ul class="hist" id="liveHist"></ul>
+  </div>
+  <p class="note">Fuentes: pluviómetros, nivel del dique y sensores de río de APRHI publicados por el <a href="https://estaciones-fe.ohmc.ar/" target="_blank" rel="noopener">OHMC</a>; pronóstico de <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Los umbrales son provisorios y hay que calibrarlos con APRHI y Defensa Civil. Esta herramienta no reemplaza los avisos oficiales: ante una emergencia, llamá al 100 (Bomberos) y seguí las indicaciones de Defensa Civil.</p>
+</section>
+
 <!-- Situación actual -->
 <section class="panel" style="display:grid;gap:14px">
   <div style="display:grid;gap:4px">
     <span class="eyebrow">Situación al domingo 15 de noviembre de 2026</span>
-    <h2>Dique a −1,40 m con tormentas anunciadas para el lunes</h2>
+    <h2>Dique a −1,24 m, suelo húmedo y tormentas anunciadas para el lunes</h2>
   </div>
   <div class="grid g2">
     <div style="display:grid;gap:8px;align-content:start">
@@ -173,10 +237,11 @@ ol.limits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
         <tbody>
           <tr><td>2/11</td><td class="num">32,95 m</td><td class="num">−1,05 m</td><td>APRHI</td></tr>
           <tr><td>12–13/11</td><td class="num">32,37 m</td><td class="num">−1,63 m</td><td>Cooperativa / Diques de Córdoba</td></tr>
-          <tr class="hl"><td>14/11</td><td class="num">32,60 m</td><td class="num">−1,40 m</td><td>Sensor APRHI (informe municipal)</td></tr>
+          <tr><td>14/11</td><td class="num">32,60 m</td><td class="num">−1,40 m</td><td>Sensor APRHI (informe municipal)</td></tr>
+          <tr class="hl"><td>15/11 21:20</td><td class="num">32,76 m</td><td class="num">−1,24 m</td><td>Sensor APRHI, vía OHMC</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Entre el 2 y el 12 de noviembre bajó 58 cm sin lluvia, unos 16.000 m³ por día entre toma de la planta y evaporación. Es más de lo que supone el modelo (unos 11.000 m³/día), así que la autonomía real puede ser menor que la calculada. La tormenta del 13 al 14 lo subió 23 cm. Por esa subida se estima que en la cuenca cayeron unos 25 mm. Es una estimación: no hay datos publicados de los pluviómetros de la cuenca.</p>
+      <p class="note">Entre el 2 y el 12 de noviembre bajó 58 cm sin lluvia, unos 16.000 m³ por día entre toma de la planta y evaporación. Es más de lo que supone el modelo (unos 11.000 m³/día), así que la autonomía real puede ser menor que la calculada. La tormenta del 13 al 14 dejó 59 mm en Cuenca Alta Colanchanga y 76 mm en Los Hornillos (pluviómetros de APRHI publicados por el OHMC), pero el dique subió apenas unos 40 cm en dos días: con el suelo seco, la cuenca absorbió casi toda el agua. Ahora el suelo quedó húmedo y la próxima lluvia va a escurrir mucho más.</p>
     </div>
     <div style="display:grid;gap:8px;align-content:start">
       <h3>Pronóstico (SMN y Aeropuerto Córdoba)</h3>
@@ -194,13 +259,14 @@ ol.limits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
   </div>
   <div class="rec">
     <span class="eyebrow" style="color:var(--water)">Lectura para el lunes 16</span>
-    <p>El colchón actual es de <b class="num">0,40 hm³</b>. Con suelo todavía seco absorbe hasta ~75 mm. Si el suelo quedó húmedo por la tormenta del viernes, absorbe solo ~45 mm. Según el modelo, con 70 mm en 6 h:</p>
+    <p>El colchón actual es de <b class="num">0,36 hm³</b>. Con 67 mm caídos en los últimos 5 días, el suelo cuenta como saturado y el dique absorbe solo ~27 mm; con suelo normal serían ~43 mm. Según el modelo, con 70 mm en 6 h:</p>
     <ul>
-      <li><b>Suelo seco:</b> el dique sube a ~−0,2 m y no vierte.</li>
-      <li><b>Suelo húmedo:</b> vierte desde la hora 5, con un pico de ~70 m³/s sobre el río Ceballos y el dique a +0,7 m.</li>
-      <li><b>Si caen 100 mm puntuales:</b> el pico llega a ~60 m³/s con suelo seco y ~160 m³/s con suelo húmedo.</li>
+      <li><b>Suelo normal:</b> vierte desde la hora 5, con un pico de ~70 m³/s sobre el río Ceballos y el dique a +0,7 m.</li>
+      <li><b>Suelo saturado:</b> vierte desde la hora 4, con un pico de ~135 m³/s y el dique a +1,05 m.</li>
+      <li><b>Con 30 mm</b> casi no vierte (~7 m³/s con suelo saturado). <b>Con 100 mm</b> el pico llega a 160–220 m³/s.</li>
     </ul>
-    <p>El dique está 3 m por encima del nivel guía de temporada (−4,5 m). En un día no se puede recuperar ese colchón: con la válvula a 5 m³/s, en 24 h baja unos 1,5 m. Conviene que Defensa Civil tenga listos el corte de vados y el aviso a los barrios de alta amenaza para el lunes a la noche, y que se consulte a APRHI por una descarga preventiva.</p>
+    <p class="note">En la tormenta del viernes el modelo sobrestimó el escurrimiento (la cuenca absorbió más de lo esperado), así que estos picos son un techo prudente.</p>
+    <p>El dique está unos 3,3 m por encima del nivel guía de temporada (−4,5 m). En un día no se puede recuperar ese colchón: con la válvula a 5 m³/s, en 24 h baja unos 1,5 m. Conviene que Defensa Civil tenga listos el corte de vados y el aviso a los barrios de alta amenaza para el lunes a la noche, y que se consulte a APRHI por una descarga preventiva.</p>
   </div>
 </section>
 
@@ -290,7 +356,7 @@ ol.limits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
     <div style="display:grid;gap:4px">
       <span class="eyebrow">Paso 1 · cargar lluvias por día</span>
       <h2>Registro de pluviómetros de la cuenca</h2>
-      <p class="note" style="max-width:75ch">Cargá los milímetros diarios de cada estación (APRHI/Defensa Civil, OHMC, cooperativa o pluviómetros vecinales). El promedio de los últimos 5 días define si el suelo está seco, normal o saturado (condición AMC del método SCS). La fila "pronóstico" se toma del SMN para las próximas 48 h. Datos iniciales al 15/11/2026: los 25 mm del 13/11 son una estimación por la subida del dique, no una lectura de pluviómetro. Las celdas vacías cuentan como sin dato. Lo que cargues queda guardado en este navegador.</p>
+      <p class="note" style="max-width:75ch">Cargá los milímetros diarios de cada estación (APRHI/Defensa Civil, OHMC, cooperativa o pluviómetros vecinales). El promedio de los últimos 5 días define si el suelo está seco, normal o saturado (condición AMC del método SCS). La fila "pronóstico" se toma del SMN para las próximas 48 h. En la versión web, esta tabla y el nivel del dique se cargan solos con los pluviómetros de APRHI publicados por el OHMC. Las celdas vacías cuentan como sin dato. Lo que cargues queda guardado en este navegador.</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button id="addDay">+ Día</button>
@@ -468,23 +534,24 @@ function simulate(o){
 }
 
 // ---------- Registro de lluvias ----------
-const STATIONS=["Dique La Quebrada","Camino El Cuadrado","Las Minas","Río Ceballos (centro)"];
+const STATIONS=["Cuenca Alta Colanchanga","Los Hornillos","La Estancita (Salsipuedes)","Aº Los Quebrachitos (Unquillo)"];
 function isoDay(off){const d=new Date($("curDate").value||new Date());d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)}
 const DATA_DATE="2026-11-15"; const K="_"+DATA_DATE;
-function exampleRows(){const ex=[["2026-11-09",[0,"","",""]],["2026-11-10",[0,"","",""]],["2026-11-11",[0,"","",""]],["2026-11-12",[0,"","",""]],["2026-11-13",[25,"","",""]],["2026-11-14",[0,"","",""]],["2026-11-15",[0,"","",""]]];return ex.map(e=>({date:e[0],v:e[1].slice()}))}
+function exampleRows(){const ex=[["2026-11-09",[0,0,0,0]],["2026-11-10",[0,0,0,0]],["2026-11-11",[0,0,0,0]],["2026-11-12",[0,0,0,0]],["2026-11-13",[46.2,61.2,35.8,53.6]],["2026-11-14",[12.8,14.6,7.2,12.6]],["2026-11-15",[0,0,0,0.2]]];return ex.map(e=>({date:e[0],v:e[1].slice()}))}
 const FC0=[70,70,70,70];
 let rows=store.get("lq_rain"+K,null);
 let fc=store.get("lq_fc"+K,FC0.slice());
 $("curDate").value=store.get("lq_date"+K,DATA_DATE);
-$("curLevel").value=store.get("lq_level"+K,-1.40);
+$("curLevel").value=store.get("lq_level"+K,-1.24);
 if(!rows)rows=exampleRows();
 const avg=a=>{const v=a.filter(x=>x!==""&&x!=null&&!isNaN(x)).map(Number);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0};
+const avgB=a=>avg(a.slice(0,2)); // promedio de la cuenca: Colanchanga y Los Hornillos
 
 function renderRain(){
   rows.sort((a,b)=>a.date<b.date?-1:1);
   let h="<thead><tr><th>Día</th>"+STATIONS.map(s=>"<th>"+s+"</th>").join("")+"<th>Promedio cuenca</th><th></th></tr></thead><tbody>";
-  rows.forEach((r,i)=>{h+="<tr><td><input type='date' data-r='"+i+"' data-k='date' value='"+r.date+"' style='width:auto'></td>"+r.v.map((x,j)=>"<td><input type='number' min='0' step='0.5' id='r"+i+"_"+j+"' data-r='"+i+"' data-j='"+j+"' value='"+(x===""?"":x)+"' aria-label='"+STATIONS[j]+" "+r.date+"'></td>").join("")+"<td class='num'>"+fmt(avg(r.v))+" mm</td><td><button data-del='"+i+"' aria-label='Borrar día' style='padding:2px 8px'>×</button></td></tr>"});
-  h+="</tbody><tfoot><tr class='hl'><td>Pronóstico 48 h</td>"+fc.map((x,j)=>"<td><input type='number' min='0' step='1' id='fc"+j+"' data-fc='"+j+"' value='"+x+"' aria-label='Pronóstico "+STATIONS[j]+"'></td>").join("")+"<td class='num'>"+fmt(avg(fc))+" mm</td><td></td></tr></tfoot>";
+  rows.forEach((r,i)=>{h+="<tr><td><input type='date' data-r='"+i+"' data-k='date' value='"+r.date+"' style='width:auto'></td>"+r.v.map((x,j)=>"<td><input type='number' min='0' step='0.5' id='r"+i+"_"+j+"' data-r='"+i+"' data-j='"+j+"' value='"+(x===""?"":x)+"' aria-label='"+STATIONS[j]+" "+r.date+"'></td>").join("")+"<td class='num'>"+fmt(avgB(r.v))+" mm</td><td><button data-del='"+i+"' aria-label='Borrar día' style='padding:2px 8px'>×</button></td></tr>"});
+  h+="</tbody><tfoot><tr class='hl'><td>Pronóstico 48 h</td>"+fc.map((x,j)=>"<td><input type='number' min='0' step='1' id='fc"+j+"' data-fc='"+j+"' value='"+x+"' aria-label='Pronóstico "+STATIONS[j]+"'></td>").join("")+"<td class='num'>"+fmt(avgB(fc))+" mm</td><td></td></tr></tfoot>";
   $("rainTable").innerHTML=h;
 }
 $("rainTable").addEventListener("change",e=>{
@@ -501,11 +568,11 @@ $("exampleRain").onclick=()=>{rows=exampleRows();fc=FC0.slice();store.set("lq_ra
 
 function rainStats(){
   const cur=$("curDate").value;
-  const last5=rows.filter(r=>r.date<=cur&&r.date>isoDay(-5)).map(r=>avg(r.v));
+  const last5=rows.filter(r=>r.date<=cur&&r.date>isoDay(-5)).map(r=>avgB(r.v));
   const p5=last5.reduce((s,x)=>s+x,0);
   const amc=p5<36?1:p5<=53?2:3;
-  const maxDay=rows.length?Math.max(...rows.map(r=>avg(r.v))):0;
-  return {p5,amc,fcst:avg(fc),maxDay};
+  const maxDay=rows.length?Math.max(...rows.map(r=>avgB(r.v))):0;
+  return {p5,amc,fcst:avgB(fc),maxDay};
 }
 
 // ---------- Estado ----------
@@ -645,6 +712,13 @@ function renderTrade(cur){
 }
 
 ["curLevel","curDate","evap","dmin"].forEach(id=>$(id).addEventListener("input",update));
+window.LQ_APP={setLive:function(o){
+  if(o.level!=null){$("curLevel").value=o.level.toFixed(2);var n=document.getElementById("levelNote");if(n&&o.levelNote)n.textContent=o.levelNote}
+  if(o.date)$("curDate").value=o.date;
+  if(o.rows&&o.rows.length)rows=o.rows;
+  if(o.fc)fc=o.fc;
+  renderRain();update();
+}};
 renderRain();render15();runSim();update();
 })();
 </script>
@@ -654,7 +728,8 @@ renderRain();render15();runSim();update();
 <script src="map3d.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="radar.js"></script>
-
+<script src="monitor/engine.js"></script>
+<script src="monitor/ui.js"></script>
 
 </body>
 </html>

@@ -1,0 +1,41 @@
+name: Monitoreo Dique La Quebrada
+
+# Cada 10 minutos: lee pluviómetros, nivel del dique y sensores del río (OHMC/APRHI),
+# calcula la alerta, avisa por ntfy si sube y publica el sitio con data/estado.json actualizado.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: monitor-pages
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Leer estaciones y evaluar alerta
+        run: node monitor/run.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Publicar sitio
+        id: deploy
+        uses: actions/deploy-pages@v4
