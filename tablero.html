@@ -410,8 +410,8 @@ button:hover{border-color:var(--water)}
     <div class="inputs">
       <div class="field">
         <label for="curLevel">Nivel del embalse (m respecto del vertedero)</label>
-        <input type="number" id="curLevel" step="0.05" value="-1.24">
-        <span class="note" id="levelNote">Sensor APRHI (OHMC), 15/11/2026 21:20</span>
+        <input type="number" id="curLevel" step="0.05" value="-1.20">
+        <span class="note" id="levelNote">Sensor APRHI (OHMC), 16/11/2026 11:40</span>
       </div>
       <div class="field">
         <label for="curDate">Fecha</label>
@@ -598,8 +598,8 @@ button:hover{border-color:var(--water)}
 <!-- Situación actual -->
 <section class="sec" id="parte">
   <div class="sec-h">
-    <span class="tag">Parte del día · domingo 15 de noviembre de 2026</span>
-    <h2>Dique a −1,24 m, suelo húmedo y tormentas anunciadas</h2>
+    <span class="tag">Parte del día · lunes 16 de noviembre de 2026</span>
+    <h2>Alerta naranja hoy: el dique a −1,20 m absorbe unos 90 mm</h2>
   </div>
   <div class="cols">
     <div class="stack">
@@ -610,35 +610,35 @@ button:hover{border-color:var(--water)}
           <tr><td>2/11</td><td class="num">32,95 m</td><td class="num">−1,05 m</td><td>APRHI</td></tr>
           <tr><td>12–13/11</td><td class="num">32,37 m</td><td class="num">−1,63 m</td><td>Cooperativa / Diques de Córdoba</td></tr>
           <tr><td>14/11</td><td class="num">32,60 m</td><td class="num">−1,40 m</td><td>Sensor APRHI (informe municipal)</td></tr>
-          <tr class="hl"><td>15/11 21:20</td><td class="num">32,76 m</td><td class="num">−1,24 m</td><td>Sensor APRHI, vía OHMC</td></tr>
+          <tr><td>15/11 21:20</td><td class="num">32,76 m</td><td class="num">−1,24 m</td><td>Sensor APRHI, vía OHMC</td></tr>
+          <tr class="hl"><td>16/11 11:40</td><td class="num">32,80 m</td><td class="num">−1,20 m</td><td>Sensor APRHI, vía OHMC</td></tr>
         </tbody>
       </table></div>
-      <p class="note">Entre el 2 y el 12 de noviembre bajó 58 cm sin lluvia, unos 16.000 m³ por día entre toma de la planta y evaporación. Es más de lo que supone el modelo (unos 11.000 m³/día), así que la autonomía real puede ser menor que la calculada. La tormenta del 13 al 14 dejó 59 mm en Cuenca Alta Colanchanga y 76 mm en Los Hornillos (pluviómetros de APRHI publicados por el OHMC), pero el dique subió apenas unos 40 cm en dos días: con el suelo seco, la cuenca absorbió casi toda el agua. Ahora el suelo quedó húmedo y la próxima lluvia va a escurrir mucho más.</p>
+      <p class="note">Desde la tormenta del 13 al 14 el dique sigue subiendo despacio por el aporte de la cuenca: 6 cm en las últimas 24 h, sin lluvia desde el sábado (0 mm el domingo y el lunes a la mañana en Cuenca Alta Colanchanga y Los Hornillos). La lluvia antecedente en la cuenca es de 67 mm: el suelo está húmedo y la próxima lluvia va a escurrir bastante más que la del viernes.</p>
     </div>
     <div class="stack">
-      <h3>Pronóstico (SMN y Aeropuerto Córdoba)</h3>
+      <h3>Pronóstico (SMN y modelos)</h3>
       <div class="tablewrap"><table class="kv">
         <tbody>
-          <tr><td>Dom 15</td><td>Sol, máxima de 30–31 °C, sin lluvia</td></tr>
-          <tr class="hl"><td>Lun 16</td><td><b class="c-warn">Alerta amarilla por tormentas</b> en toda la provincia, tarde y noche: 30 a 70 mm, que pueden superarse en forma puntual</td></tr>
-          <tr><td>Mar 17</td><td>Mejora, sin lluvia</td></tr>
-          <tr><td>Mié 18 – Jue 19</td><td>Vuelven lluvias y chaparrones, sin montos anunciados</td></tr>
-          <tr><td>Vie 20</td><td>Mejora</td></tr>
+          <tr class="hl"><td>Lun 16</td><td><b class="c-warn">Alerta naranja por tormentas</b> en toda la provincia, desde la siesta hasta la madrugada del martes: 80 a 120 mm, que pueden superarse en forma puntual, con granizo y ráfagas de más de 90 km/h</td></tr>
+          <tr><td>Mar 17</td><td>Mejora, menos inestable; los modelos dan unos 9 mm, casi todo en la madrugada</td></tr>
+          <tr><td>Mié 18</td><td>Posibles lluvias de madrugada (unos 8 mm según los modelos, sin aviso del SMN)</td></tr>
         </tbody>
       </table></div>
-      <p class="note">En el registro de lluvias, el pronóstico se cargó con 70 mm, el límite superior del aviso, como criterio preventivo.</p>
+      <p class="note">Los modelos meteorológicos (Open-Meteo) dan unos 43 mm en 48 h para la cuenca, bastante menos que el aviso del SMN. En el registro de lluvias el pronóstico se cargó con 120 mm, el límite superior del aviso, como criterio preventivo.</p>
     </div>
   </div>
   <div class="callout">
-    <span class="t">Lectura para el lunes 16</span>
-    <p>El colchón actual es de <b class="num">0,36 hm³</b>. Con 69 mm de lluvia antecedente en 20 días el suelo está entre normal y húmedo, y según el modelo calibrado el dique absorbe <b>unos 89 mm</b> antes de verter.</p>
+    <span class="t">Lectura para el lunes 16 a la noche</span>
+    <p>El colchón actual es de <b class="num">0,35 hm³</b>. Con 67 mm de lluvia antecedente el suelo está húmedo (CN 55), y según el modelo calibrado el dique absorbe <b>unos 90 mm</b> antes de verter.</p>
     <ul>
-      <li><b>Con 30 a 50 mm</b> (el aviso del SMN): el dique sube 15 a 25 cm y no vierte.</li>
-      <li><b>Con 70 mm:</b> sube unos 50 cm y queda cerca de −0,7 m, sin verter.</li>
-      <li><b>Con más de 90 mm</b> empezaría a verter: con 100 mm, unos 0,5 hm³ pasan al río.</li>
+      <li><b>Con 40 a 60 mm</b> (lo que dan los modelos): el dique sube 20 a 30 cm y no vierte.</li>
+      <li><b>Con 80 mm</b> (piso del aviso): sube unos 80 cm y queda cerca de −0,4 m, sin verter.</li>
+      <li><b>Con 100 mm</b> empieza a verter: unos 0,13 hm³ pasan al río, con picos de 14 a 17 m³/s.</li>
+      <li><b>Con 120 mm</b> (techo del aviso): vierte unos 0,46 hm³, con picos de 40 a 60 m³/s si la lluvia cae en 6 a 12 horas.</li>
     </ul>
-    <p class="note">La tormenta del 13–14/11 (68 mm en la cuenca) hizo subir el dique unos 40 cm, en línea con este modelo.</p>
-    <p>El dique está unos 3,3 m por encima del nivel guía de temporada (−4,5 m). Conviene seguir el radar y los pluviómetros el lunes a la noche: si la lluvia en la cuenca pasa de 60–70 mm, avisar a Defensa Civil para el corte de vados y consultar a APRHI por una descarga preventiva.</p>
+    <p class="note">La tormenta del 13–14/11 (68 mm en la cuenca, con el suelo seco) hizo subir el dique unos 40 cm. Ahora el suelo está húmedo y la misma lluvia rinde más.</p>
+    <p>El techo del aviso supera lo que puede absorber el dique. Conviene avisar hoy a Defensa Civil para tener listo el corte de vados y consultar a APRHI si corresponde una descarga preventiva antes de la noche. Seguir el radar y los pluviómetros: si la lluvia en la cuenca pasa de 70–80 mm, el vertido es probable.</p>
   </div>
 </section>
 
@@ -956,7 +956,7 @@ button:hover{border-color:var(--water)}
     <div><b>Cooperativa de Obras y Servicios de Río Ceballos</b><span>Planta potabilizadora La Quebrada, restricciones de consumo (Ordenanza 2495/2018).</span><nav><a href="https://www.cooprc.com.ar/" target="_blank" rel="noopener">cooprc.com.ar</a></nav></div>
     <div><b>Omixom · red de pluviómetros</b><span>Operador de las estaciones automáticas que usa APRHI.</span><nav><a href="https://www.omixom.com/" target="_blank" rel="noopener">omixom.com</a></nav></div>
     <div><b>APRHI · SIHM y Portal de Información Hídrica</b><span>243 estaciones automáticas con lecturas cada 10 minutos.</span><nav><a href="https://opendata.fi.uncoma.edu.ar/jornadasIDERA/trabajos/Suaya_et_al_SIHM.pdf" target="_blank" rel="noopener">Descripción del sistema</a></nav></div>
-    <div><b>Datos de esta actualización (15/11/2026)</b><span>Nivel del dique, informe de la tormenta del 13–14/11 y alerta para el lunes 16.</span><nav><a href="https://rioceballos.gob.ar/informe-tras-las-lluvias-del-13-y-14-de-noviembre-trabajo-coordinado-y-sin-personas-evacuadas/" target="_blank" rel="noopener">Informe municipal 14/11</a><a href="https://www.diquesdecordoba.com.ar/tabla/" target="_blank" rel="noopener">Tabla de diques</a><a href="https://el-periodico.com.ar/local/sigue-el-tiempo-inestable--hay-alerta-por-tormentas-para-el-lunes-16-en-toda-cordoba_a6af8deb0d331d3b83679dfbd" target="_blank" rel="noopener">Alerta lunes 16</a><a href="https://www.cadena3.com/noticia/una-manana-para-todos/cuanto-llovio-en-cordoba-y-como-seguira-el-tiempo-en-los-proximos-dias-tras-el-temporal_613146" target="_blank" rel="noopener">Pronóstico de la semana</a></nav></div>
+    <div><b>Datos de esta actualización (16/11/2026)</b><span>Nivel del dique y lluvias del robot (APRHI/OHMC) y alerta naranja del SMN para el lunes 16.</span><nav><a href="https://lucas22rivas.github.io/dique-la-quebrada/data/estado.json" target="_blank" rel="noopener">Datos del robot</a><a href="https://eldoce.tv/actualidad/2026/11/16/la-hora-clave-por-la-llegada-tormentas-severas-con-granizo-a-cordoba-hay-alerta-naranja/" target="_blank" rel="noopener">Alerta naranja (El Doce)</a><a href="https://www.cronista.com/informacion-gral/se-aproxima-una-fuerte-tormenta-este-lunes-16-de-noviembre-se-esperan-hasta-120-mm-de-lluvia-granizo-y-rafagas-de-viento-de-mas-de-90-kmh-en-cordoba/" target="_blank" rel="noopener">Aviso del SMN (El Cronista)</a><a href="https://www.smn.gob.ar/alertas" target="_blank" rel="noopener">Alertas SMN</a></nav></div>
   </div>
 </section>
 
@@ -1016,13 +1016,13 @@ function simulate(o){
 // ---------- Registro de lluvias ----------
 const STATIONS=["Cuenca Alta Colanchanga","Los Hornillos","La Estancita (Salsipuedes)","Aº Los Quebrachitos (Unquillo)"];
 function isoDay(off){const d=new Date($("curDate").value||new Date());d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)}
-const DATA_DATE="2026-11-15"; const K="_"+DATA_DATE;
-function exampleRows(){const ex=[["2026-11-09",[0,0,0,0]],["2026-11-10",[0,0,0,0]],["2026-11-11",[0,0,0,0]],["2026-11-12",[0,0,0,0]],["2026-11-13",[46.2,61.2,35.8,53.6]],["2026-11-14",[12.8,14.6,7.2,12.6]],["2026-11-15",[0,0,0,0.2]]];return ex.map(e=>({date:e[0],v:e[1].slice()}))}
-const FC0=[70,70,70,70];
+const DATA_DATE="2026-11-16"; const K="_"+DATA_DATE;
+function exampleRows(){const ex=[["2026-11-10",[0,0,0,0]],["2026-11-11",[0,0,0,0]],["2026-11-12",[0,0,0,0]],["2026-11-13",[46.2,61.2,35.8,53.6]],["2026-11-14",[12.8,14.6,7.2,12.6]],["2026-11-15",[0,0,0,0.2]],["2026-11-16",[0,0,0,0]]];return ex.map(e=>({date:e[0],v:e[1].slice()}))}
+const FC0=[120,120,120,120];
 let rows=store.get("lq_rain"+K,null);
 let fc=store.get("lq_fc"+K,FC0.slice());
 $("curDate").value=store.get("lq_date"+K,DATA_DATE);
-$("curLevel").value=store.get("lq_level"+K,-1.24);
+$("curLevel").value=store.get("lq_level"+K,-1.20);
 if(!rows)rows=exampleRows();
 const avg=a=>{const v=a.filter(x=>x!==""&&x!=null&&!isNaN(x)).map(Number);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0};
 const avgB=a=>avg(a.slice(0,2)); // promedio de la cuenca: Colanchanga y Los Hornillos
@@ -1257,17 +1257,17 @@ renderRain();render15();runSim();update();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-<script src="mapdata.js?v=mwit0aau"></script>
-<script src="map3d.js?v=mwit0aau"></script>
+<script src="mapdata.js?v=mwjdxb6e"></script>
+<script src="map3d.js?v=mwjdxb6e"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="radar.js?v=mwit0aau"></script>
-<script src="monitor/engine.js?v=mwit0aau"></script>
-<script src="monitor/ui.js?v=mwit0aau"></script>
-<script src="monitor/historia-ui.js?v=mwit0aau"></script>
-<script src="monitor/camara.js?v=mwit0aau"></script>
-<script src="monitor/red-ui.js?v=mwit0aau"></script>
-<script src="rio3d-data.js?v=mwit0aau"></script>
-<script src="rio3d.js?v=mwit0aau"></script>
+<script src="radar.js?v=mwjdxb6e"></script>
+<script src="monitor/engine.js?v=mwjdxb6e"></script>
+<script src="monitor/ui.js?v=mwjdxb6e"></script>
+<script src="monitor/historia-ui.js?v=mwjdxb6e"></script>
+<script src="monitor/camara.js?v=mwjdxb6e"></script>
+<script src="monitor/red-ui.js?v=mwjdxb6e"></script>
+<script src="rio3d-data.js?v=mwjdxb6e"></script>
+<script src="rio3d.js?v=mwjdxb6e"></script>
 
 </body>
 </html>
