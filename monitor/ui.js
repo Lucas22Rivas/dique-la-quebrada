@@ -88,7 +88,7 @@
     const NR = e.normalRio || {};
     $("liveRios").innerHTML = "<thead><tr><th>Sensor</th><th>Ahora</th><th>Normal</th><th>Sobre lo normal</th><th>En 30 min</th></tr></thead><tbody>" +
       e.rios.map(r => { const n = NR[r.id], an = r.activa && n != null ? r.nivel - n : null, c = an == null ? "" : an >= 1 ? "c-crit" : an >= .5 ? "c-bad" : an >= .25 ? "c-warn" : "c-ok";
-        return `<tr><td>${esc(r.nombre)}</td><td class="num">${r.activa ? fmt(r.nivel, 2) + " m" : "<span class='c-warn'>sin datos</span>"}</td><td class="num muted">${n != null ? fmt(n, 2) + " m" : "–"}</td><td class="num ${c}"><b>${an == null ? "–" : (an >= 0 ? "+" : "") + Math.round(an * 100) + " cm"}</b></td><td class="num">${r.activa && r.subida30 != null ? (r.subida30 >= 0 ? "+" : "") + Math.round(r.subida30 * 100) + " cm" : "–"}</td></tr>`; }).join("") + "</tbody>";
+        return `<tr><td>${esc(r.nombre)}</td><td class="num">${r.activa ? fmt(r.nivel, 2) + " m" : "<span class='c-warn'>sin datos" + ((r.dato || r.ultimoDato) ? " desde " + hora(r.dato || r.ultimoDato) : "") + "</span>"}</td><td class="num muted">${n != null ? fmt(n, 2) + " m" : "–"}</td><td class="num ${c}"><b>${an == null ? "–" : (an >= 0 ? "+" : "") + Math.round(an * 100) + " cm"}</b></td><td class="num">${r.activa && r.subida30 != null ? (r.subida30 >= 0 ? "+" : "") + Math.round(r.subida30 * 100) + " cm" : "–"}</td></tr>`; }).join("") + "</tbody>";
     $("liveHist").innerHTML = (e.historial || []).slice(0, 8).map(h => `<li>${tagl(h.nivel)}<span class="mono">${hora(h.t)}</span><span>${esc(h.motivo)}</span></li>`).join("") || "<li>Sin cambios registrados.</li>";
     document.title = (a.orden >= 2 ? "⚠ " + a.etiqueta.toUpperCase() + " · " : "") + "Monitor Dique La Quebrada";
 

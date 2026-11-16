@@ -25,6 +25,7 @@ const RIOS = [
   { id: 98670, nombre: "Río Ceballos · Puente Amuchástegui" },
   { id: 751, nombre: "Río Ceballos · Puente San José" },
   { id: 174264, nombre: "Arroyo Saldán · Unquillo" },
+  { id: 2123427, nombre: "Río Ceballos · Puente San José (cámara Orus, vía OHMC)", orus: true },
 ];
 const PRON = { lat: -31.15, lon: -64.38 };
 
@@ -98,7 +99,7 @@ async function main() {
   for (const r of RIOS) {
     try {
       const s = (await serie(r.id, 26, 2)).filter(x => x.v > -1 && x.v < 15);
-      if (!s.length) { rios.push({ ...r, activa: false }); continue; }
+      if (!s.length) { const viejo = (await serie(r.id, 26, 7)).filter(x => x.v > -1 && x.v < 15).pop(); rios.push({ ...r, activa: false, ultimoDato: viejo ? iso(viejo.t) : null, nivelViejo: viejo ? viejo.v : null }); continue; }
       const u = s[s.length - 1];
       const prev30 = s.filter(x => x.t <= u.t - 30 * 60e3).pop();
       const min24 = Math.min(...s.filter(x => x.t > u.t - 24 * 36e5).map(x => x.v));
