@@ -39,7 +39,7 @@
     const pad = (hi - lo) * .08 || .1; lo = o.yMin != null ? lo : lo - pad; hi += pad;
     const x = t => m.l + (t - t0) / (t1 - t0) * iw, y = v => m.t + ih - (v - lo) / (hi - lo) * ih;
     const step = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(step))), st = [1, 2, 2.5, 5, 10].map(k => k * mag).find(k => k >= step);
-    let s = `<svg viewBox="0 0 ${W} ${Hh}" width="100%" height="${Hh}" role="img" aria-label="${o.aria || ""}">`;
+    let s = `<svg viewBox="0 0 ${W} ${Hh}" width="100%" height="${Hh}" role="img" aria-label="${o.aria || ""}"><defs><pattern id="gap" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="var(--muted)" opacity=".28"/></pattern></defs>`;
     for (let v = Math.ceil(lo / st) * st; v <= hi; v += st) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line-2)"/><text x="${m.l - 6}" y="${y(v) + 3.5}" text-anchor="end">${fmt(v, st < 1 ? (st < .1 ? 2 : 1) : 0)}</text>`;
     // eje de tiempo: un tick por día (o cada 4 h en 24 h)
     const tickH = o.dias <= 1 ? 4 * 36e5 : o.dias <= 7 ? 864e5 : 5 * 864e5;
@@ -47,6 +47,7 @@
     const every = Math.max(1, Math.ceil(64 / (iw * tickH / (t1 - t0)))); let tk = 0;
     for (let t = d0.getTime(); t <= t1; t += tickH) { if (t < t0) continue; if (tk++ % every) continue; s += `<line x1="${x(t)}" x2="${x(t)}" y1="${m.t}" y2="${m.t + ih}" stroke="var(--line-2)"/><text x="${x(t) + 3}" y="${Hh - 8}">${o.dias <= 1 ? hora(t) : dia(t)}</text>`; }
     (o.refs || []).forEach(r => { if (r.v < lo || r.v > hi) return; s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(r.v)}" y2="${y(r.v)}" stroke="${r.col}" stroke-dasharray="5 4" stroke-width="1.3"/><text x="${W - m.r - 4}" y="${y(r.v) - 4}" text-anchor="end" style="fill:${r.col}">${r.label}</text>`; });
+    if (o.gaps) { const gw = iw / ((t1 - t0) / o.gaps.dt); o.gaps.pts.forEach(t => { if (t < t0) return; s += `<rect x="${x(t) - gw}" y="${m.t}" width="${Math.max(1, gw)}" height="${ih}" fill="url(#gap)"/>`; }); }
     if (o.bars) { const bw = Math.max(1, iw / ((t1 - t0) / o.bars.dt) - 1); o.bars.pts.forEach(p => { if (p[1] == null || p[1] <= 0) return; s += `<rect x="${x(p[0]) - bw}" y="${y(p[1])}" width="${bw}" height="${y(lo) - y(p[1])}" fill="${o.bars.col}"/>`; }); }
     o.series.forEach((se, si) => {
       let d = "", pen = false;
@@ -96,8 +97,26 @@
     $("hRioNote").textContent = anom ? "Diferencia entre la altura medida y la normal de cada sensor (mediana de 7 días). La línea punteada es el umbral de Alerta (+0,5 m); el de Emergencia es +1 m." : "Altura del agua sobre el fondo del cauce en cada sensor, como la mide APRHI.";
     // Lluvia
     const lc = lluviaCuenca(rng); let acc = 0; const cum = lc.pts.map(p => [p[0], acc += p[1] || 0]);
-    chart($("chRain"), { dias: rng, series: [], bars: { pts: lc.pts, col: "var(--water)", dt: lc.paso === "hora" ? 36e5 : 6e5 }, right: { pts: cum, col: "var(--ink)" }, unit: "mm por " + lc.paso, yMin: 0, fmtV: v => fmt(v, 1) + " mm", aria: "Lluvia en la cuenca" });
+    const dtR = lc.paso === "hora" ? 36e5 : 6e5;
+    chart($("chRain"), { dias: rng, series: [], gaps: { pts: lc.pts.filter(p => p[1] == null).map(p => p[0]), dt: dtR }, bars: { pts: lc.pts, col: "var(--water)", dt: dtR }, right: { pts: cum, col: "var(--ink)" }, unit: "mm por " + lc.paso, yMin: 0, fmtV: v => fmt(v, 1) + " mm", aria: "Lluvia en la cuenca" });
     $("hRainTot").textContent = fmt(acc, 0) + " mm en " + (rng === 1 ? "24 h" : rng + " días");
+    // Resumen por día (hora local de Córdoba): total, días sin lluvia y horas sin dato
+    {
+      const src = H.h, t0d = Date.parse(src.inicio), fromD = Date.now() - rng * 864e5, dias = new Map();
+      (src.s.p58 || []).forEach((_, i) => {
+        const t = t0d + i * 36e5; if (t < fromD) return;
+        const k = new Date(t - 3 * 36e5).toISOString().slice(0, 10), v = [src.s.p58[i], src.s.p93[i]].filter(x => x != null);
+        const d = dias.get(k) || { mm: 0, con: 0, tot: 0 }; d.tot++; if (v.length) { d.con++; d.mm += v.reduce((a, b) => a + b, 0) / v.length; } dias.set(k, d);
+      });
+      const arr = [...dias.entries()];
+      const secos = arr.filter(([, d]) => d.con > 0 && d.mm < 0.5).length, huecos = arr.reduce((a, [, d]) => a + (d.tot - d.con), 0), totH = arr.reduce((a, [, d]) => a + d.tot, 0);
+      $("rainDays").innerHTML = arr.map(([k, d]) => {
+        const lab = new Date(k + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric" });
+        const cls = d.con === 0 ? "nd" : d.mm >= 20 ? "wet3" : d.mm >= 5 ? "wet2" : d.mm >= 0.5 ? "wet1" : "dry";
+        return `<div class="rd ${cls}" title="${lab}: ${d.con ? fmt(d.mm, 1) + " mm" : "sin datos"}${d.con < d.tot ? " · " + (d.tot - d.con) + " h sin dato" : ""}"><span>${lab}</span><b>${d.con === 0 ? "s/d" : d.mm < 0.5 ? "0" : fmt(d.mm, d.mm < 10 ? 1 : 0)}</b>${d.con < d.tot && d.con > 0 ? "<i>" + (d.tot - d.con) + " h s/d</i>" : ""}</div>`;
+      }).join("");
+      $("rainCover").textContent = (secos ? secos + (secos === 1 ? " día sin lluvia" : " días sin lluvia") + " (0 mm medidos, no falta de datos). " : "") + (huecos ? "Faltan datos en " + huecos + " de " + totH + " horas (rayado gris)." : "Datos completos: los pluviómetros reportaron todas las horas.");
+    }
     // Tabla por estación
     const from = Date.now() - rng * 864e5, t0h = Date.parse(H.h.inicio);
     const est = [["p58", "Cuenca Alta Colanchanga", true], ["p93", "Los Hornillos", true], ["p67", "La Estancita (Salsipuedes)"], ["p390", "Aº Los Quebrachitos (Unquillo)"]];

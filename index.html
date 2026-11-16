@@ -298,6 +298,18 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
 .r3-track input{position:absolute;left:0;right:0;bottom:0;width:100%}
 .r3-vel{display:grid;gap:6px;justify-items:end}
 @media (max-width:600px){.r3-vel{justify-items:start}}
+/* Lluvia por día */
+.rdays{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:4px;margin-top:4px}
+.rd{border-radius:4px;padding:5px 6px;display:grid;gap:1px;font-size:.7rem;color:var(--muted);background:var(--line-2);min-width:0}
+.rd b{font-family:var(--f-mono);font-size:.88rem;color:var(--ink);font-weight:600}
+.rd i{font-style:normal;font-size:.64rem;color:var(--warn)}
+.rd.dry b{color:var(--muted);font-weight:400}
+.rd.wet1{background:color-mix(in srgb,var(--water) 18%,var(--panel))}
+.rd.wet2{background:color-mix(in srgb,var(--water) 38%,var(--panel))}
+.rd.wet3{background:color-mix(in srgb,var(--water) 62%,var(--panel))}
+.rd.wet3 b,.rd.wet3 span{color:#fff}
+.rd.nd{background:repeating-linear-gradient(45deg,var(--line-2) 0 3px,transparent 3px 6px)}
+.lg-gap{background:repeating-linear-gradient(45deg,var(--muted) 0 2px,transparent 2px 4px)!important;height:10px!important;opacity:.6}
 
 </style>
 
@@ -428,7 +440,9 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
       <div class="hcard-h"><h3>Lluvia en la cuenca del dique</h3><span class="mono hbig" id="hRainTot"></span></div>
       <p class="note">Barras: milímetros por hora (promedio de Cuenca Alta Colanchanga y Los Hornillos). Línea: lluvia acumulada en el período.</p>
       <div class="hchart" id="chRain"></div>
-      <div class="legend"><span><i style="background:var(--water)"></i>mm por hora</span><span><i style="background:var(--ink)"></i>Acumulado</span></div>
+      <div class="legend"><span><i style="background:var(--water)"></i>mm por hora</span><span><i style="background:var(--ink)"></i>Acumulado</span><span><i class="lg-gap"></i>Sin dato</span></div>
+      <div class="rdays" id="rainDays" aria-label="Lluvia por día"></div>
+      <p class="note" id="rainCover"></p>
       <div class="tablewrap"><table id="tbRain"></table></div>
     </div>
 
