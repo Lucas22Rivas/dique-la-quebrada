@@ -147,7 +147,7 @@ async function main() {
     if (!SIN_AVISOS) {
       try {
         const r = await fetch(NTFY, { method: "POST", body: cuerpo, headers: {
-          Title: titulo.normalize("NFD").replace(/[̀-ͯ]/g, ""), Priority: aviso.prioridad,
+          Title: titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "-"), Priority: aviso.prioridad,
           Tags: ev.orden === 3 ? "rotating_light" : ev.orden === 2 ? "warning" : bajoANormal ? "white_check_mark" : "cloud_with_rain",
           Click: SITIO }, signal: AbortSignal.timeout(20000) });
         aviso.enviado = r.ok;
