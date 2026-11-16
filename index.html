@@ -3,250 +3,284 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Centro de Monitoreo · Dique La Quebrada</title>
-<meta name="description" content="Centro de Monitoreo Hidrológico del Dique La Quebrada (Río Ceballos, Córdoba): estado del dique, lluvia en la cuenca, río aguas abajo y alertas en tiempo real.">
+<title>HIDRA | Centro de Monitoreo Hidrológico</title>
+<meta name="description" content="HIDRA · Centro de Monitoreo Hidrológico del Dique La Quebrada (Río Ceballos, Córdoba): dique, lluvia en la cuenca, río, alerta temprana de evacuación por barrio y sensores en tiempo real.">
+<meta name="theme-color" content="#08121f">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-/* Centro de Monitoreo Hidrológico — Dique La Quebrada.
-   Consola de sala de operaciones: barra lateral + barra superior con pestañas, tarjetas oscuras
-   con brillo sutil, acentos por nivel de alerta (verde/amarillo/naranja/rojo). */
+/* HIDRA · Centro de Monitoreo Hidrológico — Dique La Quebrada.
+   Estilo HIDRA: navy profundo, paneles azul pizarra, acento cian, Inter. */
 :root{
-  --bg:#0a1118; --bg2:#0c1621; --panel:#101c29; --panel2:#132436; --line:#1f3245; --line2:#182838;
-  --ink:#e8f0f6; --ink2:#aebccb; --muted:#6d8097;
-  --acc:#2f9bde; --acc2:#39c0c8; --water:#2f9bde;
-  --ok:#2bc48a; --warn:#e8b53a; --bad:#f08a3c; --crit:#ef4d5a;
-  --ok-g:rgba(43,196,138,.16); --warn-g:rgba(232,181,58,.16); --bad-g:rgba(240,138,60,.16); --crit-g:rgba(239,77,90,.18);
-  --f-head:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
-  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
-  --side:232px; --top:62px; --r:12px;
+  --bg:#08121f; --side:#0b192a; --panel:#101f30; --panel2:#152c40; --item:#15293b;
+  --line:#263d53; --line2:#22364c; --line3:#31516b;
+  --ink:#e9f2fa; --ink2:#b9ccda; --ink3:#94b1c5; --muted:#7f9eb6; --dim:#718da2;
+  --acc:#4ac8ef; --acc2:#56bce5; --accbg:#173c5a; --sel:#1b3b52;
+  --ok:#4fd5a0; --okt:#68d9af; --warn:#eac47b; --bad:#ff9b5c; --crit:#ff8491; --critbtn:#b43c50;
+  --r:12px;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg);font-synthesis:none;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:
-  radial-gradient(1200px 600px at 80% -10%, rgba(47,155,222,.08), transparent 60%),
-  var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
-h1,h2,h3,h4{margin:0;font-family:var(--f-head);font-weight:700;letter-spacing:.01em}
-p{margin:0}
+body{margin:0;display:flex;min-height:100vh;background:var(--bg)}
+button{font:inherit;cursor:pointer;color:inherit}
 a{color:var(--acc);text-decoration:none}
-.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-button{font-family:var(--f-body);cursor:pointer;border:0;background:none;color:inherit}
-.c-ok{color:var(--ok)}.c-warn{color:var(--warn)}.c-bad{color:var(--bad)}.c-crit{color:var(--crit)}
-[data-lvl=ok]{--l:var(--ok);--lg:var(--ok-g)}[data-lvl=warn]{--l:var(--warn);--lg:var(--warn-g)}
-[data-lvl=bad]{--l:var(--bad);--lg:var(--bad-g)}[data-lvl=crit]{--l:var(--crit);--lg:var(--crit-g)}
+[hidden]{display:none!important}
+.num{font-variant-numeric:tabular-nums}
 
-/* ---------- Estructura ---------- */
-.app{display:grid;grid-template-columns:var(--side) minmax(0,1fr);grid-template-rows:var(--top) 1fr;min-height:100%;
-  max-width:100%;overflow-x:hidden;grid-template-areas:"side top" "side main"}
-.side{grid-area:side;background:linear-gradient(180deg,var(--bg2),var(--bg));border-right:1px solid var(--line);
-  display:flex;flex-direction:column;gap:6px;padding:16px 12px;position:sticky;top:0;height:100vh;overflow:auto}
-.top{grid-area:top;background:color-mix(in srgb,var(--bg2) 85%,transparent);backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:0 20px;position:sticky;top:0;z-index:30}
-.main{grid-area:main;padding:16px 20px 28px;min-width:0}
+/* ---------- Barra lateral ---------- */
+.sidebar{width:224px;flex-shrink:0;background:var(--side);border-right:1px solid var(--line2);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:24px 14px;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:0 9px 26px}
+.brandicon{font-size:45px;line-height:1;color:var(--acc)}
+.brand strong{font-size:28px;letter-spacing:2px;display:block;line-height:1.1}
+.brand small{display:block;font-size:9px;letter-spacing:1.1px;color:var(--muted)}
+.sidebar nav{display:grid;gap:6px}
+.nav{background:transparent;border:0;color:#a9bdd0;text-align:left;padding:12px 13px;border-radius:9px;display:flex;align-items:center;gap:10px;font-size:14px;width:100%}
+.nav .i{width:18px;text-align:center;opacity:.9}
+.nav:hover,.nav.active{background:var(--accbg);color:#fff}
+.nav .count{margin-left:auto;background:#d94b58;color:#fff;border-radius:10px;padding:0 7px;font-size:12px;font-weight:700}
+.nav-sec{font-size:9px;letter-spacing:1.4px;color:var(--muted);font-weight:700;padding:18px 13px 4px}
+.nav.sm{padding:9px 13px;font-size:13px;color:#93abc0}
+.sidebar-bottom{margin-top:auto;padding-top:18px;color:#a6c4d4;font-size:12px}
+.sidebar-bottom small{display:block;margin-top:7px;color:#7e95a7;line-height:1.5}
+.dot{display:inline-block;width:8px;height:8px;background:var(--ok);border-radius:50%;margin-right:6px;box-shadow:0 0 8px var(--ok)}
+.dot.bad{background:var(--warn);box-shadow:0 0 8px var(--warn)}
 
-/* Barra lateral */
-.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
-.brand .logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex:none;
-  background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 4px 14px rgba(47,155,222,.4)}
-.brand b{font-family:var(--f-head);font-size:1.32rem;line-height:1;display:block}
-.brand span{font-size:.72rem;color:var(--muted)}
-.nav-s{display:flex;flex-direction:column;gap:2px}
-.nav-s button{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--ink2);
-  font-size:.9rem;font-weight:500;text-align:left;width:100%}
-.nav-s button svg{width:18px;height:18px;flex:none;opacity:.85}
-.nav-s button:hover{background:var(--line2);color:var(--ink)}
-.nav-s button.on{background:linear-gradient(90deg,rgba(47,155,222,.18),transparent);color:#fff;
-  box-shadow:inset 2px 0 0 var(--acc)}
-.nav-s button.on.alrt{background:linear-gradient(90deg,var(--crit-g),transparent);box-shadow:inset 2px 0 0 var(--crit);color:#fff}
-.side .foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:grid;gap:10px}
-.side .loc{display:flex;align-items:center;gap:10px;color:var(--ink2);font-size:.82rem}
-.side .wx{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:2px}
-.side .wx .t{font-family:var(--f-head);font-size:1.5rem;line-height:1}
-.side .wx small{color:var(--muted);font-size:.72rem}
+/* ---------- Contenido ---------- */
+main{flex:1;min-width:0;padding:27px 28px 10px;max-width:1800px;margin:0 auto}
+header,.header-right,.panel-heading,.alert-banner,.layers{display:flex;align-items:center;justify-content:space-between;gap:14px}
+header{margin-bottom:22px}
+.eyebrow{color:var(--acc2);font-size:11px;letter-spacing:2px;font-weight:700}
+h1{font-size:27px;margin:6px 0 0;letter-spacing:-.7px;font-weight:700}
+h1 span{color:#7db4d4}
+.header-right{color:#a8c2d7;font-size:12px}
+.pill{font-size:10px;color:var(--warn);border:1px solid #806239;background:#473b2829;padding:7px 10px;border-radius:7px;font-weight:700;white-space:nowrap;letter-spacing:.4px}
+.pill.live{color:var(--ok);border-color:#2f7a5d;background:#1d4a3a40}
+.pill.cyan{color:var(--acc);border-color:#2e6a85;background:#1b3b5240}
 
-/* Barra superior */
-.top .title{display:flex;flex-direction:column;line-height:1.1}
-.top .title b{font-family:var(--f-head);font-size:1.15rem}
-.top .title span{font-size:.72rem;color:var(--muted)}
-.tabs{display:flex;gap:2px;margin-left:8px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{padding:7px 13px;border-radius:8px;font-size:.86rem;font-weight:600;color:var(--ink2);white-space:nowrap;display:flex;align-items:center;gap:7px}
-.tabs button:hover{background:var(--line2);color:var(--ink)}
-.tabs button.on{background:var(--panel2);color:#fff;box-shadow:inset 0 0 0 1px var(--line)}
-.tabs button.alrt.on{background:var(--crit-g);box-shadow:inset 0 0 0 1px var(--crit);color:#fff}
-.tabs .badge{background:var(--crit);color:#fff;font-size:.66rem;font-weight:700;border-radius:99px;min-width:16px;height:16px;display:grid;place-items:center;padding:0 4px}
-.top .right{margin-left:auto;display:flex;align-items:center;gap:14px}
-.sysok{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--ok);background:var(--ok-g);border:1px solid color-mix(in srgb,var(--ok) 40%,transparent);padding:5px 11px;border-radius:99px}
-.sysok.bad{color:var(--crit);background:var(--crit-g);border-color:color-mix(in srgb,var(--crit) 40%,transparent)}
-.sysok i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
-.clk{font-family:var(--f-mono);font-size:.84rem;color:var(--ink2);white-space:nowrap}
-@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "main"}.side{display:none}.main{padding:14px 14px 24px}}
+/* Banner de alerta (estado de la cuenca) */
+.alert-banner{justify-content:flex-start;border-radius:12px;padding:15px 20px;margin-bottom:16px;border:1px solid}
+.alert-banner[data-lvl=ok]{background:linear-gradient(100deg,#163d35,#14262f 65%,#132238);border-color:#2f7a5d}
+.alert-banner[data-lvl=warn]{background:linear-gradient(100deg,#4a3c1c,#2a2620 65%,#132238);border-color:#9a7a3a}
+.alert-banner[data-lvl=bad]{background:linear-gradient(100deg,#55301c,#2c2020 65%,#132238);border-color:#b8693a}
+.alert-banner[data-lvl=crit]{background:linear-gradient(100deg,#52212d,#271c2c 65%,#132238);border-color:#ae4658;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 4px #ae465833,0 0 28px #ae465844}}
+.alert-symbol{font-size:30px;line-height:1}
+[data-lvl=ok] .alert-symbol{color:var(--ok)}[data-lvl=warn] .alert-symbol{color:var(--warn)}[data-lvl=bad] .alert-symbol{color:var(--bad)}[data-lvl=crit] .alert-symbol{color:var(--crit)}
+.alert-banner b{font-size:13px;color:#fff;letter-spacing:.3px}
+.alert-banner p{font-size:12px;color:#cdd9e3;margin:6px 0 0}
+.alert-banner .upd{margin-left:auto;text-align:right;font-size:11px;color:var(--ink3);white-space:nowrap}
+.alert-banner .upd b{display:block;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.alert-banner button{white-space:nowrap;color:#fff;border:0;padding:10px 15px;border-radius:8px;background:#2a5d7c}
+.alert-banner[data-lvl=crit] button{background:var(--critbtn)}
+.alert-banner[data-lvl=bad] button{background:#a8562a}
 
-/* ---------- Vistas ---------- */
-.view{display:none}
-.view.on{display:block;animation:fade .25s ease}
-@keyframes fade{from{opacity:0;transform:translateY(4px)}}
+/* Tu zona (evacuación) */
+.zonas{display:grid;gap:12px;margin-bottom:16px}
+.zona{border-radius:12px;border:1px solid var(--line);background:var(--panel);overflow:hidden}
+.zona.calma{display:flex;align-items:center;gap:12px;padding:12px 18px;border-color:#2f5a4c;background:linear-gradient(100deg,#13302b,var(--panel) 55%)}
+.zona.calma b{font-size:13px}
+.zona.calma .muted{color:var(--ink3);font-size:12px}
+.zona.calma .r{margin-left:auto;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;text-align:right}
+.zona.activa{padding:16px 20px}
+.zona.activa[data-lvl=warn]{border-color:#9a7a3a;background:linear-gradient(100deg,#3d321a,var(--panel) 60%)}
+.zona.activa[data-lvl=bad]{border-color:#b8693a;background:linear-gradient(100deg,#4a2a1a,var(--panel) 60%)}
+.zona.activa[data-lvl=crit]{border-color:#d0566a;background:linear-gradient(100deg,#5a1f2c,#2a1a26 60%,var(--panel));box-shadow:0 0 0 1px #d0566a55}
+.zona.peligro{animation:pulse 1.6s ease-in-out infinite}
+.zona .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.zona .chip{font-size:12px;font-weight:800;letter-spacing:1px;color:#fff;padding:6px 11px;border-radius:7px;text-transform:uppercase}
+[data-lvl=warn] .chip{background:#9a7a3a}[data-lvl=bad] .chip{background:#b8693a}[data-lvl=crit] .chip{background:var(--critbtn)}
+.zona .who{font-size:15px;font-weight:700}
+.zona .who small{display:block;font-size:11px;color:var(--ink3);font-weight:400;margin-top:2px}
+.zona .eta{margin-left:auto;text-align:right;border:1px solid var(--line3);background:#0c1a2a99;border-radius:10px;padding:7px 13px}
+.zona .eta .k{font-size:10px;color:var(--ink3);letter-spacing:.6px;font-weight:700;text-transform:uppercase}
+.zona .eta .v{font-size:26px;font-weight:800;line-height:1.1;color:#fff;font-variant-numeric:tabular-nums}
+.zona .accion{margin-top:12px;font-size:15px;line-height:1.45;color:#fff;font-weight:600}
+.zona .por{margin-top:10px;display:grid;gap:5px}
+.zona .por span{font-size:12px;color:var(--ink2);padding-left:14px;position:relative}
+.zona .por span::before{content:"";position:absolute;left:2px;top:7px;width:5px;height:5px;border-radius:50%;background:var(--crit)}
+.zona .pie{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:11px;color:var(--ink3);border-top:1px solid #ffffff1a;padding-top:10px}
+.zona .pie .r{font-variant-numeric:tabular-nums;color:var(--ink2)}
 
-/* Banner de alerta */
-.banner{border-radius:var(--r);padding:16px 22px;margin-bottom:16px;display:grid;
-  grid-template-columns:auto 1fr auto auto;gap:22px;align-items:center;
-  background:linear-gradient(90deg,var(--lg),transparent 70%),var(--panel);border:1px solid var(--l,var(--line))}
-.banner[data-lvl=crit]{animation:pulseb 2.4s ease-in-out infinite}
-@keyframes pulseb{50%{box-shadow:0 0 0 4px var(--crit-g),0 0 30px var(--crit-g)}}
-.banner .ic{width:54px;height:54px;border-radius:12px;display:grid;place-items:center;background:var(--lg);color:var(--l)}
-.banner .ic svg{width:30px;height:30px}
-.banner .tx b{font-family:var(--f-head);font-size:1.7rem;line-height:1;display:flex;align-items:center;gap:12px}
-.banner .pill{font-family:var(--f-body);font-size:.72rem;font-weight:700;letter-spacing:.06em;color:#fff;background:var(--l);padding:3px 9px;border-radius:6px}
-.banner .tx p{color:var(--ink2);margin-top:5px}
-.banner .meta{text-align:right}
-.banner .meta .k{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:6px;justify-content:flex-end}
-.banner .meta .v{font-family:var(--f-mono);font-size:.96rem;margin-top:2px}
-.banner .eta .v{font-family:var(--f-head);font-size:1.9rem;color:var(--l)}
-@media (max-width:1100px){.banner{grid-template-columns:auto 1fr;gap:14px}.banner .meta{display:none}}
+/* Métricas */
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.metric,.panel{border:1px solid var(--line);background:var(--panel);border-radius:12px}
+.metric{padding:16px 18px;position:relative;overflow:hidden}
+.metric::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lc,transparent)}
+.metric[data-lvl=warn]{--lc:var(--warn)}.metric[data-lvl=bad]{--lc:var(--bad)}.metric[data-lvl=crit]{--lc:var(--crit)}
+.metric small,.reading small{color:var(--ink3);font-size:10px;font-weight:700;letter-spacing:1px}
+.metric strong{display:block;font-size:30px;margin:9px 0 6px;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.metric em{font-size:16px;color:#b3c5d2;font-style:normal;font-weight:500}
+.metric span{font-size:11px;color:var(--ink3);display:block}
+.metric span.up{color:#f38d8e}.metric span.down,.metric span.ok{color:var(--okt)}
+.metric span + span{margin-top:3px}
 
-/* Rejilla principal */
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}
-@media (max-width:1200px){.grid{grid-template-columns:1fr}}
-.col{display:grid;gap:16px;align-content:start;min-width:0}
-
-/* Tarjetas de cifras */
-.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-@media (max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}}
-.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden}
-.card::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--l,var(--acc))}
-.card .h{display:flex;align-items:center;gap:8px;color:var(--ink2);font-size:.82rem;font-weight:600}
-.card .h svg{width:16px;height:16px;color:var(--l,var(--acc))}
-.card .v{font-family:var(--f-head);font-size:2.2rem;line-height:1.05;margin-top:4px;font-variant-numeric:tabular-nums}
-.card .v small{font-family:var(--f-body);font-size:.9rem;color:var(--muted);font-weight:500}
-.card .s{font-size:.78rem;color:var(--ink2);margin-top:3px}
-.card .trend{font-family:var(--f-mono);font-size:.78rem}
-
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.panel-h{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--line);font-weight:600}
-.panel-h svg{width:17px;height:17px;color:var(--acc)}
-.panel-h .r{margin-left:auto;font-size:.76rem;color:var(--muted);font-weight:400}
-.panel-b{padding:14px 16px}
-
-/* Mapa central */
-.mapwrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#0c1620}
-#map3d{width:100%;height:min(52vh,460px);min-height:320px}
-#map3d canvas{display:block}
-.callout{position:absolute;z-index:5;background:rgba(10,20,30,.86);border:1px solid var(--l,var(--line));border-radius:9px;padding:7px 11px;backdrop-filter:blur(6px);pointer-events:none;max-width:200px}
-.callout .k{font-size:.68rem;color:var(--ink2);display:flex;align-items:center;gap:6px}
-.callout .v{font-family:var(--f-mono);font-size:1.05rem;font-weight:600}
-.callout .s{font-size:.68rem;color:var(--l,var(--muted))}
-.callout.storm{border-color:var(--crit)}
-.map-ctrls{position:absolute;left:12px;bottom:12px;z-index:5;background:rgba(10,20,30,.86);border:1px solid var(--line);border-radius:9px;padding:9px 11px;backdrop-filter:blur(6px)}
-.map-ctrls .t{font-size:.72rem;color:var(--ink2);font-weight:600;margin-bottom:5px}
-.lyr{display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--ink2);padding:2px 0;cursor:pointer}
-.lyr input{accent-color:var(--acc);margin:0}
+/* Mapa + investigación */
+.workspace{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,.85fr);gap:14px}
+.panel{overflow:hidden}
+.panel-heading{padding:15px 17px;border-bottom:1px solid #263b4f;min-height:66px}
+.panel-heading h2{font-size:14px;margin:0;font-weight:700}
+.panel-heading small{display:block;color:#839db0;font-size:11px;margin-top:4px}
+.layers{font-size:11px;color:#b8cbd8;flex-wrap:wrap;justify-content:flex-end}
+.layers label{white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer}
+input{accent-color:var(--acc)}
+.seg{display:inline-flex;border:1px solid var(--line3);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--ink3);font-size:11px;font-weight:700;padding:6px 10px}
+.seg button.on{background:var(--accbg);color:#fff}
+.mapbox{position:relative;height:480px;background:#112b34}
+#map,#map3d{position:absolute;inset:0}
+#map3d{background:#0c1620}
+.map-legend{position:absolute;right:10px;bottom:10px;z-index:500;background:#0b192ae6;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:10.5px;color:var(--ink2);display:grid;gap:4px;pointer-events:none}
+.map-legend i{display:inline-block;width:12px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.map-foot{font-size:10px;color:#8fa9b8;padding:9px 14px}
+.leaflet-container{background:#112b34;font:inherit}
+.marker{border:2px solid #fff;background:#25d1b4;border-radius:50%;width:16px;height:16px;box-shadow:0 0 0 6px #1ab7a54a;transition:transform .2s}
+.marker.lluvia{background:#4dc7ef;box-shadow:0 0 0 6px #4dc7ef3a}
+.marker.dique{background:#7aa7ff;box-shadow:0 0 0 6px #7aa7ff40;border-radius:4px}
+.marker.off{background:#5b6b7a;box-shadow:none;opacity:.7}
+.marker.warn{background:var(--warn);box-shadow:0 0 0 7px #eac47b44}
+.marker.crit{background:var(--crit);box-shadow:0 0 0 8px #ff849155}
+.marker.active{background:#ffb855!important;box-shadow:0 0 0 9px #ffb85555!important;transform:scale(1.25)}
+.marker.zona{background:#fff;border-color:var(--crit);width:14px;height:14px;box-shadow:0 0 0 5px #ff849133}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#142b40;color:#f1f7fc}
+.leaflet-popup-content{font-size:12px;margin:10px 12px}
+.leaflet-popup-content small{color:var(--ink3)}
+.leaflet-control-zoom a{background:#142b40!important;color:#e9f2fa!important;border-color:var(--line)!important}
+.leaflet-control-attribution{background:#0b192acc!important;color:#7f9eb6!important;font-size:9px!important}
+.leaflet-control-attribution a{color:#9fc3d8!important}
+/* Controles del 3D (los arma map3d.js) */
+#mapLayers{position:absolute;left:10px;bottom:10px;z-index:5;background:#0b192ae6;border:1px solid var(--line);border-radius:9px;padding:8px 10px;max-height:calc(100% - 20px);overflow:auto}
+#mapLayers .lyr,#mapLayers label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);padding:2px 0;cursor:pointer}
 .hidden-ctrls{position:absolute;left:-9999px;top:-9999px}
 
-/* Columna derecha */
-.kv{display:grid;gap:11px}
-.kv .row{display:flex;align-items:center;gap:11px;font-size:.88rem}
-.kv .row .ic{width:30px;height:30px;border-radius:8px;background:var(--lg,var(--line2));color:var(--l,var(--acc));display:grid;place-items:center;flex:none}
-.kv .row .ic svg{width:16px;height:16px}
-.kv .row .lbl{color:var(--ink2)}
-.kv .row .val{margin-left:auto;font-weight:600;text-align:right}
-.kv .row .val b{font-family:var(--f-head);font-size:1.2rem}
-.recs{display:grid;gap:9px}
-.rec{display:flex;gap:10px;align-items:flex-start;font-size:.86rem;color:var(--ink)}
-.rec svg{width:17px;height:17px;flex:none;margin-top:1px;color:var(--ok)}
-.rec.warn{background:var(--warn-g);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);padding:9px 11px;border-radius:8px}
-.rec.warn svg{color:var(--warn)}
-/* Cronología */
-.tl{display:grid;gap:0}
-.tl .it{display:grid;grid-template-columns:52px 1fr;gap:12px;position:relative;padding-bottom:16px}
-.tl .it:not(:last-child)::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:2px;background:var(--line)}
-.tl .it .t{font-family:var(--f-mono);font-size:.78rem;color:var(--ink2)}
-.tl .it .dot{position:absolute;left:0;top:4px;width:12px;height:12px;border-radius:50%;background:var(--l,var(--acc));box-shadow:0 0 0 3px var(--bg),0 0 10px var(--l)}
-.tl .it .c b{display:block;color:var(--l,var(--ink));font-size:.88rem}
-.tl .it .c span{font-size:.8rem;color:var(--ink2)}
+.side-panel{padding-bottom:12px}
+.reading{margin:14px;padding:16px;border:1px solid var(--line3);background:var(--panel2);border-radius:10px}
+.reading strong{font-size:31px;display:block;margin:6px 0;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.reading .tr{font-size:12px;color:var(--ink3)}
+.reading .tr.up{color:#ff8c95}.reading .tr.down{color:var(--okt)}
+.reading p{font-size:12px;color:#b9ccda;margin:8px 0 0;line-height:1.5}
+.side-panel h3{font-size:12px;color:#b7cddd;margin:19px 15px 9px;display:flex;align-items:center;justify-content:space-between}
+.side-panel h3 button{background:none;border:0;color:var(--acc);font-size:11px;font-weight:600}
+.sensor-list{display:grid;gap:6px;padding:0 14px}
+.sensor{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:10px;border-radius:8px;background:var(--item);border:1px solid #2a4154;color:#e6f3fc;width:100%}
+.sensor:hover,.sensor.selected{border-color:#55c8ef;background:var(--sel)}
+.sensor small{display:block;color:#8eafc5;margin-top:3px;font-size:11px}
+.sensor strong{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sensor .nm{font-size:13px;font-weight:600}
+.sensor .st{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:middle}
+.sensor .st.off{background:#5b6b7a}.sensor .st.warn{background:var(--warn)}.sensor .st.crit{background:var(--crit)}
+.timeline{padding:0 16px}
+.event{display:flex;gap:12px;border-left:1px solid #35617d;margin-left:5px;padding:2px 0 15px 14px;cursor:pointer;position:relative}
+.event::before{content:"";position:absolute;left:-4px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--ec,#6dd4f2)}
+.event[data-lvl=warn]{--ec:var(--warn)}.event[data-lvl=bad]{--ec:var(--bad)}.event[data-lvl=crit]{--ec:var(--crit)}.event[data-lvl=ok]{--ec:var(--ok)}
+.event:hover b{color:#66d1f2}
+.event time{font-size:11px;color:#6dd4f2;min-width:40px;font-variant-numeric:tabular-nums}
+.event b{font-size:11px}
+.event p{font-size:10.5px;color:#9fb8c8;margin:4px 0 0;line-height:1.45}
+.empty{font-size:12px;color:var(--ink3);padding:4px 2px}
 
-/* Gráficos de abajo */
-.charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
-@media (max-width:1000px){.charts{grid-template-columns:1fr}}
-.chartbox{position:relative}
-.chartbox svg{display:block;width:100%}
-.chartbox text{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
-.ch-side{display:grid;gap:10px;align-content:start}
-.ch-stat{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 12px}
-.ch-stat .k{font-size:.72rem;color:var(--muted)}
-.ch-stat .v{font-family:var(--f-head);font-size:1.4rem}
-.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.76rem;color:var(--ink2);margin-top:8px}
-.legend i{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
-.legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px)}
+/* Gráficos */
+.charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px}
+.chart-wrap{height:240px;padding:16px;position:relative}
+.chart-foot{display:flex;flex-wrap:wrap;gap:8px 18px;padding:0 16px 14px;font-size:11px;color:var(--ink3)}
+.chart-foot b{color:var(--ink);font-variant-numeric:tabular-nums}
+footer{font-size:11px;color:var(--dim);text-align:center;padding:22px;line-height:1.6}
 
-.note{font-size:.78rem;color:var(--muted)}
-.tabwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:4px}
-.embed .sec{padding:18px}
-.embed .sec-h h2{color:var(--ink)}
+@media(max-width:1100px){.workspace{grid-template-columns:minmax(0,1fr)}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.alert-banner .upd{display:none}}
+@media(max-width:700px){
+  body{display:block}
+  .sidebar{height:auto;width:100%;position:static;padding:12px;overflow:visible}
+  .brand{padding:0 6px 10px}.brandicon{font-size:34px}.brand strong{font-size:22px}
+  .sidebar nav{display:flex;overflow-x:auto;gap:4px;scrollbar-width:none}
+  .nav{white-space:nowrap;padding:9px 11px;width:auto}
+  .nav-sec,.nav.sm,.sidebar-bottom{display:none}
+  main{padding:16px}
+  .header-right .clk{display:none}
+  h1{font-size:22px}
+  .alert-banner{flex-wrap:wrap}.alert-banner button{margin-left:0}
+  .metric strong{font-size:24px}
+  .charts{grid-template-columns:minmax(0,1fr)}
+  .mapbox{height:360px}
+  .panel-heading{flex-wrap:wrap}
+  .zona .eta{margin-left:0}
+}
 
 </style>
 </head>
 <body>
-<div class="app">
+<aside class="sidebar">
+  <div class="brand"><span class="brandicon">≋</span><div><strong>HIDRA</strong><small>MONITOREO HIDROLÓGICO</small></div></div>
+  <nav id="nav">
+    <button class="nav active" data-go="top"><span class="i">◫</span>Monitoreo</button>
+    <button class="nav" data-go="evac"><span class="i">⚠</span>Alertas <b class="count" id="navCount" hidden>0</b></button>
+    <button class="nav" data-go="investigar"><span class="i">◉</span>Sensores</button>
+    <button class="nav" data-go="charts"><span class="i">▥</span>Histórico</button>
+    <div class="nav-sec">HERRAMIENTAS</div>
+    <a class="nav sm" href="tablero.html#radar"><span class="i">◎</span>Radar de tormentas</a>
+    <a class="nav sm" href="tablero.html#parte"><span class="i">☁</span>Pronóstico</a>
+    <a class="nav sm" href="tablero.html#rio3d"><span class="i">⛰</span>Río 3D y simulación</a>
+    <a class="nav sm" href="tablero.html#herramientas"><span class="i">⚙</span>Simulador del dique</a>
+    <a class="nav sm" href="tablero.html#camara"><span class="i">▣</span>Cámara Puente San José</a>
+    <a class="nav sm" href="tablero.html#historial"><span class="i">☰</span>Archivo histórico</a>
+    <a class="nav sm" href="tablero.html"><span class="i">↗</span>Tablero completo</a>
+  </nav>
+  <div class="sidebar-bottom"><span class="dot" id="sbDot"></span><span id="sbTxt">Conectando…</span><small id="sbSub">OHMC · APRHI · Open-Meteo</small></div>
+</aside>
 
-  <!-- ===== Barra lateral ===== -->
-  <aside class="side">
-    <div class="brand">
-      <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M2 14c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/><path d="M2 18c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg></span>
-      <div><b>Dique La Quebrada</b><span>Centro de Monitoreo Hidrológico</span></div>
-    </div>
-    <nav class="nav-s" id="navSide"></nav>
-    <div class="foot">
-      <div class="loc"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Río Ceballos, Córdoba</div>
-      <div class="wx" id="wx"><div class="t">–</div><small>Clima local</small></div>
-    </div>
-  </aside>
-
-  <!-- ===== Barra superior ===== -->
-  <header class="top">
-    <div class="title"><b id="topTitle">Monitoreo</b><span id="topSub">Estado general del sistema</span></div>
-    <nav class="tabs" id="navTop"></nav>
-    <div class="right">
-      <span class="sysok" id="sysState"><i></i><span>Sistema operativo</span></span>
-      <span class="clk" id="clk"></span>
-    </div>
+<main id="top">
+  <header>
+    <div><div class="eyebrow">SIERRAS CHICAS · CÓRDOBA · DIQUE LA QUEBRADA</div><h1>Centro de Monitoreo <span>Hidrológico</span></h1></div>
+    <div class="header-right"><span class="pill live" id="livePill">● EN VIVO</span><span class="clk" id="clock"></span></div>
   </header>
 
-  <!-- ===== Vista principal: Monitoreo / Alertas ===== -->
-  <main class="main">
-    <section class="view on" id="v-monitoreo">
-      <div class="banner" id="banner" data-lvl="ok">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg></div>
-        <div class="tx"><b id="bnLvl">—<span class="pill" id="bnPill"></span></b><p id="bnMsg"></p></div>
-        <div class="meta"><div class="k"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg>Última actualización</div><div class="v" id="bnUpd">—</div></div>
-        <div class="meta eta" id="bnEtaWrap" hidden><div class="k"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Tiempo de viaje al valle</div><div class="v" id="bnEta">—</div></div>
-      </div>
+  <section class="zonas" id="evac"></section>
 
-      <div class="cards" id="cards"></div>
+  <section class="alert-banner" id="banner" data-lvl="ok">
+    <div class="alert-symbol">⚠</div>
+    <div><b id="bnTitle">CARGANDO DATOS…</b><p id="bnMsg"></p></div>
+    <div class="upd">Última lectura<b id="bnUpd">—</b></div>
+    <button id="investigate">Investigar evento ↗</button>
+  </section>
 
-      <div class="grid" style="margin-top:16px">
-        <div class="col">
-          <div class="mapwrap">
-            <div id="map3d" role="img" aria-label="Mapa 3D de la cuenca del Dique La Quebrada con los sensores"></div>
-            <div class="map-ctrls"><div class="t">Capas del mapa</div><div id="mapLayers"></div></div>
-            <div id="calloutHost"></div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="panel"><div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21v-8l9-7 9 7v8"/><path d="M9 21v-6h6v6"/></svg>Impacto estimado</div><div class="panel-b"><div class="kv" id="impacto"></div></div></div>
-          <div class="panel"><div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-5v12L3 13z"/></svg>Recomendaciones (Defensa Civil)</div><div class="panel-b"><div class="recs" id="recs"></div></div></div>
-          <div class="panel"><div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Cronología del evento</div><div class="panel-b"><div class="tl" id="timeline"></div></div></div>
+  <section class="metrics" id="metrics"></section>
+
+  <section class="workspace">
+    <article class="panel map-panel">
+      <div class="panel-heading">
+        <div><h2>Mapa de la cuenca</h2><small>Dique La Quebrada · Río Ceballos · zonas de amenaza (Municipalidad / INA)</small></div>
+        <div class="layers">
+          <label><input id="showSensors" type="checkbox" checked> Sensores</label>
+          <label><input id="showZones" type="checkbox" checked> Amenaza</label>
+          <label><input id="showRivers" type="checkbox" checked> Cauces</label>
+          <span class="seg"><button class="on" data-mode="2d">2D</button><button data-mode="3d">3D</button></span>
         </div>
       </div>
-
-      <div class="charts">
-        <div class="panel"><div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-5 4 3 6-7"/></svg>Evolución del nivel del río<span class="r" id="rioSensor"></span></div><div class="panel-b"><div class="chartbox"><svg id="chRio2" viewBox="0 0 640 230"></svg></div><div class="legend"><span><i style="background:var(--acc)"></i>Nivel observado</span><span style="color:var(--bad)"><i class="dash"></i>Tendencia</span><span><i style="background:var(--crit)"></i>Umbral de alerta</span></div></div></div>
-        <div class="panel"><div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16a5 5 0 01-1-9.9A6 6 0 0118 8a4 4 0 01-1 8"/><path d="M8 19l1 2M12 19l1 2M16 19l1 2"/></svg>Lluvia en la cuenca<span class="r">por hora y acumulada</span></div><div class="panel-b"><div style="display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:14px"><div class="chartbox"><svg id="chLlu2" viewBox="0 0 520 230"></svg></div><div class="ch-side"><div class="ch-stat"><div class="k">Total 6 h</div><div class="v" id="llu6">—</div></div><div class="ch-stat"><div class="k">Última hora</div><div class="v" id="llu1">—</div></div><div class="ch-stat"><div class="k">Antecedente</div><div class="v" id="lluApi">—</div></div></div></div></div></div>
+      <div class="mapbox">
+        <div id="map"></div>
+        <div id="map3d" hidden><div id="mapLayers"></div></div>
+        <div class="map-legend" id="mapLegend"><span><i style="background:#d32f2f"></i>Amenaza alta</span><span><i style="background:#f57c00"></i>Amenaza moderada</span><span><i style="background:#f4c430"></i>Amenaza baja</span></div>
       </div>
+      <div class="map-foot">Sensores reales del OHMC/APRHI. Las zonas de amenaza son las del mapa municipal de inundación. Tocá un sensor para investigarlo.</div>
+    </article>
 
-      <p class="note" style="margin-top:14px">Herramienta de apoyo; no reemplaza los avisos oficiales. El caudal y el impacto son estimaciones del modelo calibrado, no mediciones. Emergencias: Bomberos 100 · Defensa Civil de Río Ceballos. Fuentes: APRHI y OHMC.</p>
-    </section>
-  </main>
-</div>
+    <article class="panel side-panel" id="investigar">
+      <div class="panel-heading"><div><h2>Investigación de evento</h2><small id="selectedName">—</small></div><span class="pill cyan" id="evtPill">EN VIVO</span></div>
+      <div class="reading"><small id="selectedKind">LECTURA SELECCIONADA</small><strong id="selectedValue">—</strong><span class="tr" id="selectedTrend"></span><p id="selectedDescription"></p></div>
+      <h3>Sensores correlacionados <button id="toggleAll">Ver todos</button></h3>
+      <div id="sensorList" class="sensor-list"></div>
+      <h3>Cronología del evento</h3>
+      <div id="timeline" class="timeline"></div>
+    </article>
+  </section>
+
+  <section class="charts" id="charts">
+    <article class="panel"><div class="panel-heading"><div><h2>Evolución del río</h2><small id="levelSub">Últimas 24 h</small></div><span class="pill cyan">Observado · OHMC</span></div><div class="chart-wrap"><canvas id="levelChart"></canvas></div><div class="chart-foot" id="levelFoot"></div></article>
+    <article class="panel"><div class="panel-heading"><div><h2>Precipitación horaria</h2><small>Promedio de la cuenca del dique · últimas 12 h</small></div><span class="pill cyan">Pluviómetros</span></div><div class="chart-wrap"><canvas id="rainChart"></canvas></div><div class="chart-foot" id="rainFoot"></div></article>
+  </section>
+
+  <footer>HIDRA · Dique La Quebrada (Río Ceballos) · Herramienta de apoyo: no reemplaza los avisos oficiales de Defensa Civil ni del COE. Emergencias: 100 (Bomberos) · 103 (Defensa Civil).<br>Fuentes: OHMC / APRHI, Open-Meteo, Radar RMA1. Umbrales de evacuación provisorios, en calibración.</footer>
+</main>
 
 <!-- Controles que necesita el mapa 3D (ocultos) -->
 <div class="hidden-ctrls" aria-hidden="true">
@@ -255,10 +289,10 @@ button{font-family:var(--f-body);cursor:pointer;border:0;background:none;color:i
   <button data-view="ciudad" class="on">Ciudad</button><button data-view="dique">Dique</button><button data-view="cuenca">Cuenca</button><button data-view="planta">Planta</button>
 </div>
 
-<script src="mapdata.js?v=mwis6mxs"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-<script src="map3d.js?v=mwis6mxs"></script>
-<script src="centro/centro.js?v=mwis6mxs"></script>
+<script>window.HIDRA_V = "mwit0aau";</script>
+<script src="mapdata.js?v=mwit0aau"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="centro/centro.js?v=mwit0aau"></script>
 </body>
 </html>

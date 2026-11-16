@@ -30,6 +30,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      espera: ${{ steps.cadencia.outputs.espera }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,6 +43,14 @@ jobs:
           ORUS_USUARIO: ${{ secrets.ORUS_USUARIO }}
           ORUS_CLAVE: ${{ secrets.ORUS_CLAVE }}
           ORUS_ESTACION: ${{ vars.ORUS_ESTACION || secrets.ORUS_ESTACION }}
+      # Cadencia adaptativa: con amenaza activa se vuelve a leer cada 2–5 min en lugar de cada 10
+      - name: Calcular la próxima espera
+        id: cadencia
+        if: always()
+        run: |
+          s=$(node -e 'try{const e=require("./data/estado.json");const o=Math.max((e.evacuacion&&e.evacuacion.ordenMax)||0,(e.alerta&&e.alerta.orden||0)>=2?2:0);console.log(o>=3?120:o>=2?150:o>=1?300:0)}catch(x){console.log(0)}')
+          echo "espera=$s" >> "$GITHUB_OUTPUT"
+          echo "Próxima espera: $s s (0 = marca de 10 min)"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -55,12 +65,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Esperar a la próxima marca de 10 minutos
+      - name: Esperar (2–5 min con amenaza activa, si no hasta la próxima marca de 10 min)
+        env:
+          ESPERA: ${{ needs.monitor.outputs.espera }}
         run: |
-          now=$(date +%s)
-          next=$(( (now / 600 + 1) * 600 ))
-          wait=$(( next - now - 60 ))
-          if [ $wait -lt 30 ]; then wait=$(( wait + 600 )); fi
+          if [ -n "$ESPERA" ] && [ "$ESPERA" -gt 0 ] 2>/dev/null; then
+            wait=$ESPERA
+          else
+            now=$(date +%s)
+            next=$(( (now / 600 + 1) * 600 ))
+            wait=$(( next - now - 60 ))
+            if [ $wait -lt 30 ]; then wait=$(( wait + 600 )); fi
+          fi
           echo "Esperando $wait segundos"
           sleep $wait
       - name: Lanzar la próxima corrida

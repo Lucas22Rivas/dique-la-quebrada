@@ -205,6 +205,20 @@ async function main() {
     celdas: tormentas ? tormentas.celdas : [],
   });
 
+  // 5b. Alerta temprana de evacuación por zonas ribereñas (lo más importante para la gente del río)
+  let evac = null;
+  try {
+    const orusIn = (camara && camara.configurado && !camara.demo && camara.ultimo && camara.ultimo.nivel != null) ? {
+      nivel: camara.ultimo.nivel, subida30: camara.ultimo.subida30, normal: camara.normal,
+      activa: now - Date.parse(camara.ultimo.t) < 60 * 60e3, dato: camara.ultimo.t, serie: camara.serie || [],
+    } : null;
+    evac = require("./evacuacion.js").evaluar({
+      now, iso, rios, dique, cuenca, pronostico, tormentas, hist,
+      normales: (hist && hist.normal) || {}, orus: orusIn, absorbible: ev.lluviaAbsorbible,
+    });
+    console.log("Evacuación:", evac.nivelMax, "·", evac.zonas.map(z => z.nombre + ": " + z.etiqueta + (z.eta ? " (ETA " + z.eta.minutos + " min)" : "")).join(" | "));
+  } catch (e) { errores.push("Evacuación: " + e.message); }
+
   // 6. Estado anterior (desde el sitio publicado) para detectar cambios
   let previo = null;
   try { previo = await getJSON(SITIO + "data/estado.json?t=" + now, 1); } catch (e) { /* primera vez */ }
@@ -236,10 +250,34 @@ async function main() {
     }
   }
 
+  // 7b. Aviso de evacuación por zona (prioridad máxima): cuando una zona pasa a Evacuación/peligro o sube
+  let avisoEvac = null;
+  if (evac && evac.ordenMax >= 3) {
+    const prevZ = {}; ((previo && previo.evacuacion && previo.evacuacion.zonas) || []).forEach(z => prevZ[z.id] = z.orden);
+    const subidas = evac.zonas.filter(z => z.orden >= 3 && z.orden > (prevZ[z.id] || 0));
+    const recordatorio = now - ultimoAviso > 15 * 60e3 ? evac.zonas.filter(z => z.orden >= 3) : [];
+    const disparar = (subidas.length ? subidas : recordatorio).sort((a, b) => b.orden - a.orden);
+    if (disparar.length) {
+      const z = disparar[0];
+      const titulo = `${z.etiqueta.toUpperCase()} · ${z.nombre}`;
+      const cuerpo = `${z.accion}\n` + (z.eta ? z.eta.texto + "\n" : "") + z.motivos.slice(0, 2).map(m => "• " + m.texto).join("\n") +
+        "\nApoyo a la decisión; seguí a Defensa Civil. Ante la duda, a zona alta.";
+      avisoEvac = { titulo, cuerpo, prioridad: "urgent", zona: z.id, orden: z.orden };
+      if (!SIN_AVISOS) {
+        try {
+          const r = await fetch(NTFY, { method: "POST", body: cuerpo, headers: {
+            Title: titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\x20-\x7E]/g, "-"), Priority: "urgent",
+            Tags: "rotating_light", Click: SITIO }, signal: AbortSignal.timeout(20000) });
+          avisoEvac.enviado = r.ok;
+        } catch (e) { avisoEvac.enviado = false; errores.push("Aviso evacuación: " + e.message); }
+      }
+    }
+  }
+
   const estado = {
     generado: iso(now), sitio: SITIO, canalAvisos: NTFY,
-    alerta: ev, cuenca, evapotranspiracion: evap, camara: camara && { configurado: camara.configurado, error: camara.error || null, ultimo: camara.ultimo || null, estacion: camara.estacion ? camara.estacion.nombre : null }, modelo: { cn: ev.cn, api: ev.api, formula: "CN = 34 + 0,32 × API; escurrimiento mínimo 3,5 %" }, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
-    ultimoAviso: aviso && aviso.enviado ? iso(now) : (previo && previo.ultimoAviso) || null, aviso,
+    alerta: ev, evacuacion: evac, cuenca, evapotranspiracion: evap, camara: camara && { configurado: camara.configurado, error: camara.error || null, ultimo: camara.ultimo || null, estacion: camara.estacion ? camara.estacion.nombre : null }, modelo: { cn: ev.cn, api: ev.api, formula: "CN = 34 + 0,32 × API; escurrimiento mínimo 3,5 %" }, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
+    ultimoAviso: (aviso && aviso.enviado) || (avisoEvac && avisoEvac.enviado) ? iso(now) : (previo && previo.ultimoAviso) || null, aviso, avisoEvac,
     umbrales: motor.UMBRALES, errores,
     fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Open-Meteo · pronóstico", "Radar RMA1 · núcleos de tormenta (OHMC)", "Motor de alertas propio (umbrales provisorios)"],
   };
