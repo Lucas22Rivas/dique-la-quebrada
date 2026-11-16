@@ -39,6 +39,8 @@ async function leer({ now, iso, outDir }) {
   const geo = await get("v1/stations-geo/");
   const feats = (geo.features || []).map(f => ({ uuid: f.properties.uuid, nombre: f.properties.name, rio: f.properties.river_name, coord: [f.geometry.coordinates[1], f.geometry.coordinates[0]], last: f.properties.last_log, cadencia: f.properties.cadence }));
   let est = process.env.ORUS_ESTACION ? feats.find(f => f.uuid === process.env.ORUS_ESTACION) : null;
+  let notaEst = null;
+  if (process.env.ORUS_ESTACION && !est) notaEst = "El uuid de ORUS_ESTACION no está en tu cuenta de Orus: se usó la estación más cercana al puente.";
   if (!est && feats.length) est = feats.map(f => ({ ...f, d: distKm(PUENTE, f.coord) })).sort((a, b) => a.d - b.d)[0];
   if (!est) return { configurado: true, error: "La cuenta de Orus no tiene estaciones visibles." };
   const lejos = est.d != null && est.d > 2;
@@ -74,7 +76,7 @@ async function leer({ now, iso, outDir }) {
   const prev30 = ult ? [...filas].reverse().find(l => l.t <= ult.t - 30 * 6e4 && l.nivel != null) : null;
   return {
     configurado: true, generado: iso(now),
-    estacion: { uuid: est.uuid, nombre: est.nombre, rio: est.rio, lat: est.coord[0], lon: est.coord[1], distanciaPuenteKm: est.d != null ? +est.d.toFixed(2) : null, advertencia: lejos ? "La estación de Orus más cercana está a más de 2 km del Puente San José: revisá ORUS_ESTACION." : null, cadenciaMin: est.cadencia || null },
+    estacion: { uuid: est.uuid, nombre: est.nombre, rio: est.rio, lat: est.coord[0], lon: est.coord[1], distanciaPuenteKm: est.d != null ? +est.d.toFixed(2) : null, advertencia: notaEst || (lejos ? "La estación de Orus más cercana está a más de 2 km del Puente San José: revisá ORUS_ESTACION." : null), cadenciaMin: est.cadencia || null },
     ultimo: ult && { t: iso(ult.t), nivel: ult.nivel, caudal: ult.caudal, subida30: prev30 && ult.nivel != null ? +(ult.nivel - prev30.nivel).toFixed(2) : null },
     normal: med(filas.map(l => l.nivel)),
     fotos, video,
