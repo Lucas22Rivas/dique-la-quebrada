@@ -115,7 +115,7 @@ async function main() {
     camara = await require("./orus.js").leer({ now, iso, outDir: OUT });
     fs.mkdirSync(path.join(OUT, "camara"), { recursive: true });
     fs.writeFileSync(path.join(OUT, "camara", "camara.json"), JSON.stringify(camara));
-    if (camara.configurado && camara.ultimo && camara.ultimo.nivel != null) {
+    if (camara.configurado && !camara.demo && camara.ultimo && camara.ultimo.nivel != null) {
       const fresca = now - Date.parse(camara.ultimo.t) < 60 * 60e3;
       rios.push({ id: "orus", nombre: "Río Ceballos · Puente San José (cámara Orus)", nivel: camara.ultimo.nivel, dato: camara.ultimo.t, activa: fresca, subida30: camara.ultimo.subida30, caudal: camara.ultimo.caudal,
         serie: camara.serie.filter(x => Date.parse(x[0]) > now - 24 * 36e5).map(x => [x[0], x[1]]) });

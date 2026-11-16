@@ -335,6 +335,8 @@ td.mh.nd{color:var(--muted);background:transparent}
 .cam-strip button.on{border-color:var(--water)}
 .cam-strip img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
 .cam-strip span{position:absolute;right:4px;bottom:3px;font:600 10px/1 var(--f-mono);color:#fff;background:rgba(0,0,0,.55);padding:2px 4px;border-radius:2px}
+.cam-demo{background:var(--warn-bg);border:1px solid var(--warn);color:var(--ink);border-radius:var(--r);padding:10px 14px;font-size:.88rem}
+.cam-demo b{color:var(--warn)}
 
 </style>
 
@@ -448,6 +450,7 @@ td.mh.nd{color:var(--muted);background:transparent}
     </div>
     <p class="note" id="camSub">Cargando la cámara…</p>
   </div>
+  <div class="cam-demo" id="camDemo" hidden>⚠ Estás viendo imágenes de <b>prueba</b> de Orus (otra estación), no la cámara real de Puente San José. Aparecen hasta que se cargue la credencial de producción de Orus.</div>
   <div class="cam-wrap">
     <figure class="cam-stage">
       <img id="camImg" alt="Foto más reciente del río Ceballos en el Puente San José tomada por la cámara Orus" hidden>
@@ -1196,16 +1199,16 @@ renderRain();render15();runSim();update();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-<script src="mapdata.js?v=mwipcsmw"></script>
-<script src="map3d.js?v=mwipcsmw"></script>
+<script src="mapdata.js?v=mwipuqll"></script>
+<script src="map3d.js?v=mwipuqll"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="radar.js?v=mwipcsmw"></script>
-<script src="monitor/engine.js?v=mwipcsmw"></script>
-<script src="monitor/ui.js?v=mwipcsmw"></script>
-<script src="monitor/historia-ui.js?v=mwipcsmw"></script>
-<script src="monitor/camara.js?v=mwipcsmw"></script>
-<script src="rio3d-data.js?v=mwipcsmw"></script>
-<script src="rio3d.js?v=mwipcsmw"></script>
+<script src="radar.js?v=mwipuqll"></script>
+<script src="monitor/engine.js?v=mwipuqll"></script>
+<script src="monitor/ui.js?v=mwipuqll"></script>
+<script src="monitor/historia-ui.js?v=mwipuqll"></script>
+<script src="monitor/camara.js?v=mwipuqll"></script>
+<script src="rio3d-data.js?v=mwipuqll"></script>
+<script src="rio3d.js?v=mwipuqll"></script>
 
 </body>
 </html>

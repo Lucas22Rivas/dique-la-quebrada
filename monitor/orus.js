@@ -45,10 +45,11 @@ async function leer({ now, iso, outDir }) {
   if (!est) return { configurado: true, error: "La cuenta de Orus no tiene estaciones visibles." };
   const lejos = est.d != null && est.d > 2;
 
-  // 3. Serie de las últimas 48 h (altura y caudal)
-  const serie = await get(`v1/stations/${est.uuid}/logs/series/?created_after=${encodeURIComponent(fechaOrus(now - 48 * 36e5))}&created_before=${encodeURIComponent(fechaOrus(now + 36e5))}`);
-  const filas = (Array.isArray(serie) ? serie : serie.results || []).map(l => ({ id: l.id, t: Date.parse(l.created), nivel: l.level != null ? +l.level : null, caudal: l.discharge != null ? +l.discharge : null, foto: l.with_snapshot, video: l.with_video }))
-    .filter(l => Number.isFinite(l.t)).sort((a, b) => a.t - b.t);
+  const demo = /sandbox/.test(API);
+  // 3. Serie: últimas 48 h; si no hay nada reciente (p. ej. en el sandbox), las últimas lecturas disponibles
+  const mapear = arr => (Array.isArray(arr) ? arr : (arr && arr.results) || []).map(l => ({ id: l.id, t: Date.parse(l.created), nivel: l.level != null ? +l.level : null, caudal: l.discharge != null ? +l.discharge : null, foto: l.with_snapshot, video: l.with_video })).filter(l => Number.isFinite(l.t)).sort((a, b) => a.t - b.t);
+  let filas = mapear(await get(`v1/stations/${est.uuid}/logs/series/?created_after=${encodeURIComponent(fechaOrus(now - 48 * 36e5))}&created_before=${encodeURIComponent(fechaOrus(now + 36e5))}`));
+  if (!filas.length) filas = mapear(await get(`v1/stations/${est.uuid}/logs/?limit=300`)).slice(-288);
 
   // 4. Fotos recientes y último video (los links de Orus vencen: se descargan y se publican copias)
   const dir = path.join(outDir, "camara"); fs.mkdirSync(dir, { recursive: true });
@@ -75,7 +76,7 @@ async function leer({ now, iso, outDir }) {
   const med = a => { const v = a.filter(x => x != null).sort((x, y) => x - y); return v.length ? v[Math.floor(v.length / 2)] : null; };
   const prev30 = ult ? [...filas].reverse().find(l => l.t <= ult.t - 30 * 6e4 && l.nivel != null) : null;
   return {
-    configurado: true, generado: iso(now),
+    configurado: true, generado: iso(now), demo,
     estacion: { uuid: est.uuid, nombre: est.nombre, rio: est.rio, lat: est.coord[0], lon: est.coord[1], distanciaPuenteKm: est.d != null ? +est.d.toFixed(2) : null, advertencia: notaEst || (lejos ? "La estación de Orus más cercana está a más de 2 km del Puente San José: revisá ORUS_ESTACION." : null), cadenciaMin: est.cadencia || null },
     ultimo: ult && { t: iso(ult.t), nivel: ult.nivel, caudal: ult.caudal, subida30: prev30 && ult.nivel != null ? +(ult.nivel - prev30.nivel).toFixed(2) : null },
     normal: med(filas.map(l => l.nivel)),

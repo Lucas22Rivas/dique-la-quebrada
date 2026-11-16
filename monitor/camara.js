@@ -49,9 +49,12 @@
     const sub = $("camSub"), dot = $("camDot");
     if (!C || !C.configurado) { sub.textContent = "La cámara todavía no está conectada: falta cargar las credenciales de Orus en el robot."; dot.className = "dot"; $("camEmpty").hidden = false; $("camEmpty").textContent = "Cámara pendiente de conexión."; return; }
     if (C.error) { sub.textContent = "No se pudo leer Orus: " + C.error; dot.className = "dot warn"; return; }
-    const u = C.ultimo, fresca = u && Date.now() - Date.parse(u.t) < 40 * 6e4;
-    dot.className = "dot " + (fresca ? "ok pulse" : "warn");
-    sub.textContent = (C.estacion ? C.estacion.nombre + (C.estacion.rio ? " · " + C.estacion.rio : "") : "") + (u ? " · última lectura " + hace(u.t) : "") + (C.estacion && C.estacion.advertencia ? " · " + C.estacion.advertencia : "");
+    const u = C.ultimo, fresca = !C.demo && u && Date.now() - Date.parse(u.t) < 40 * 6e4;
+    dot.className = "dot " + (C.demo ? "warn" : fresca ? "ok pulse" : "warn");
+    const banner = $("camDemo");
+    if (C.demo) { if (banner) banner.hidden = false; }
+    else if (banner) banner.hidden = true;
+    sub.textContent = (C.demo ? "DEMO con datos de prueba de Orus (" + (C.estacion ? C.estacion.nombre : "") + ", no es el río real) · " : (C.estacion ? C.estacion.nombre + (C.estacion.rio ? " · " + C.estacion.rio : "") : "")) + (u ? "última imagen " + hace(u.t) : "") + (C.estacion && C.estacion.advertencia ? " · " + C.estacion.advertencia : "");
     const an = u && C.normal != null && u.nivel != null ? u.nivel - C.normal : null, c = an == null ? "ok" : an >= 1 ? "crit" : an >= .5 ? "bad" : an >= .25 ? "warn" : "ok";
     $("camRo").innerHTML = [
       { k: "Altura del agua", v: u ? fmt(u.nivel) + "<small>m</small>" : "–", s: an == null ? "" : (an >= 0 ? "+" : "") + Math.round(an * 100) + " cm sobre lo habitual de 48 h", c },
