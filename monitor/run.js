@@ -18,6 +18,7 @@ const PLUVIOS = [
   { id: 93, nombre: "Los Hornillos", cuenca: true },
   { id: 67, nombre: "La Estancita (Salsipuedes)", cuenca: false },
   { id: 390, nombre: "Aº Los Quebrachitos (Unquillo)", cuenca: false },
+  { id: 389, nombre: "Aº Chiviquín (divisoria oeste)", cuenca: false },
 ];
 const DIQUE = { id: 75, tipo: 90, vertedero: 34.0 };
 const RIOS = [
@@ -70,7 +71,9 @@ async function main() {
         ultimas6h: s.filter(x => x.t > now - 6 * 36e5).map(x => [iso(x.t), r1(x.v)]) });
     } catch (e) { errores.push("Pluviómetro " + p.nombre + ": " + e.message); lluvias.push({ ...p, activa: false }); }
   }
-  const enCuenca = lluvias.filter(l => l.cuenca && l.activa);
+  // Si falla un pluviómetro de la cuenca, se reemplaza por el promedio de los vecinos que funcionan
+  let enCuenca = lluvias.filter(l => l.cuenca && l.activa);
+  if (enCuenca.length < 2) { const vec = lluvias.filter(l => !l.cuenca && l.activa); if (vec.length) enCuenca = enCuenca.concat(vec); }
   const prom = k => enCuenca.length ? r1(enCuenca.reduce((s, l) => s + l[k], 0) / enCuenca.length) : 0;
   const cuenca = { estaciones: enCuenca.length, h1: prom("h1"), h3: prom("h3"), h24: prom("h24"), d5: prom("d5"),
     intensidad: enCuenca.length ? Math.max(...enCuenca.map(l => l.intensidad)) : 0 };
@@ -159,6 +162,18 @@ async function main() {
     if (arch) fs.writeFileSync(path.join(OUT, "archivo", y + ".json"), JSON.stringify(arch));
   } catch (e) { errores.push("Archivo histórico: " + e.message); }
 
+  // Lluvia antecedente (API, mm): lluvia de cada uno de los últimos 20 días, que pierde un 10 % por día
+  let api = null;
+  if (hist) {
+    const t0 = Date.parse(hist.h.inicio), a = hist.h.s.p58, b = hist.h.s.p93, dias = new Array(20).fill(0);
+    a.forEach((_, i) => { const t = t0 + i * 36e5, d = Math.floor((now - t) / 864e5); if (d < 0 || d >= 20) return; const v = [a[i], b[i]].filter(x => x != null); if (v.length) dias[d] += v.reduce((x, y) => x + y, 0) / v.length; });
+    api = +dias.reduce((s, r, d) => s + r * Math.pow(0.9, d), 0).toFixed(1);
+    cuenca.api = api;
+  }
+  // Evapotranspiración de referencia en Los Hornillos (OHMC), promedio de 7 días, para la evaporación del embalse
+  let evap = null;
+  try { const et = await serie(93, 30, 7); if (et.length > 48) evap = +(et.reduce((s, p) => s + p.v, 0) / (et.length / 24) * (et.length > 0 ? 1 : 0)).toFixed(1); } catch (e) { errores.push("Evapotranspiración: " + e.message); }
+
   // 5. Evaluación
   const ev = motor.evaluar({
     nivelDique: dique && dique.activa ? dique.respectoVertedero : (dique ? dique.respectoVertedero : null),
@@ -201,7 +216,7 @@ async function main() {
 
   const estado = {
     generado: iso(now), sitio: SITIO, canalAvisos: NTFY,
-    alerta: ev, cuenca, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
+    alerta: ev, cuenca, evapotranspiracion: evap, modelo: { cn: ev.cn, api: ev.api, formula: "CN = 34 + 0,32 × API; escurrimiento mínimo 3,5 %" }, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
     ultimoAviso: aviso && aviso.enviado ? iso(now) : (previo && previo.ultimoAviso) || null, aviso,
     umbrales: motor.UMBRALES, errores,
     fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Open-Meteo · pronóstico", "Radar RMA1 · núcleos de tormenta (OHMC)", "Motor de alertas propio (umbrales provisorios)"],

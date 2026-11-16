@@ -335,6 +335,7 @@ td.mh.nd{color:var(--muted);background:transparent}
       <a href="#mapa">Mapa 3D</a>
       <a href="#parte">Parte del día</a>
       <a href="#herramientas">Simulador</a>
+      <a href="#calibracion">Modelo</a>
       <a href="#fuentes">Fuentes</a>
     </nav>
     <span class="chip" id="tbChip"><i></i><span id="tbLevel">–</span><small id="tbTime"></small></span>
@@ -523,14 +524,14 @@ td.mh.nd{color:var(--muted);background:transparent}
   </div>
   <div class="callout">
     <span class="t">Lectura para el lunes 16</span>
-    <p>El colchón actual es de <b class="num">0,36 hm³</b>. Con 67 mm caídos en los últimos 5 días, el suelo cuenta como saturado y el dique absorbe solo ~27 mm; con suelo normal serían ~43 mm. Según el modelo, con 70 mm en 6 h:</p>
+    <p>El colchón actual es de <b class="num">0,36 hm³</b>. Con 69 mm de lluvia antecedente en 20 días el suelo está entre normal y húmedo, y según el modelo calibrado el dique absorbe <b>unos 89 mm</b> antes de verter.</p>
     <ul>
-      <li><b>Suelo normal:</b> vierte desde la hora 5, con un pico de ~70 m³/s sobre el río Ceballos y el dique a +0,7 m.</li>
-      <li><b>Suelo saturado:</b> vierte desde la hora 4, con un pico de ~135 m³/s y el dique a +1,05 m.</li>
-      <li><b>Con 30 mm</b> casi no vierte (~7 m³/s con suelo saturado). <b>Con 100 mm</b> el pico llega a 160–220 m³/s.</li>
+      <li><b>Con 30 a 50 mm</b> (el aviso del SMN): el dique sube 15 a 25 cm y no vierte.</li>
+      <li><b>Con 70 mm:</b> sube unos 50 cm y queda cerca de −0,7 m, sin verter.</li>
+      <li><b>Con más de 90 mm</b> empezaría a verter: con 100 mm, unos 0,5 hm³ pasan al río.</li>
     </ul>
-    <p class="note">En la tormenta del viernes el modelo sobrestimó el escurrimiento (la cuenca absorbió más de lo esperado), así que estos picos son un techo prudente.</p>
-    <p>El dique está unos 3,3 m por encima del nivel guía de temporada (−4,5 m). En un día no se puede recuperar ese colchón: con la válvula a 5 m³/s, en 24 h baja unos 1,5 m. Conviene que Defensa Civil tenga listos el corte de vados y el aviso a los barrios de alta amenaza para el lunes a la noche, y que se consulte a APRHI por una descarga preventiva.</p>
+    <p class="note">La tormenta del 13–14/11 (68 mm en la cuenca) hizo subir el dique unos 40 cm, en línea con este modelo.</p>
+    <p>El dique está unos 3,3 m por encima del nivel guía de temporada (−4,5 m). Conviene seguir el radar y los pluviómetros el lunes a la noche: si la lluvia en la cuenca pasa de 60–70 mm, avisar a Defensa Civil para el corte de vados y consultar a APRHI por una descarga preventiva.</p>
   </div>
 </section>
 
@@ -671,14 +672,14 @@ td.mh.nd{color:var(--muted);background:transparent}
       <span class="big-no">Con ninguno</span>
       <p>El 15/02/2015 cayeron entre 250 y 300 mm en unas 12 horas sobre una cuenca de 36,9 km² que ya venía saturada (el embalse estaba lleno y vertiendo el día 14). Eso produce entre <b class="num" id="v15lo">7,6</b> y <b class="num" id="v15hi">8,9 hm³</b> de escurrimiento. El embalse entero, vacío, guarda 3,3 hm³. Aun en el nivel más bajo de la sequía de 2023 (−13 m) habría quedado lugar para menos de un tercio de esa agua.</p>
       <div class="bars" id="bars15"></div>
-      <p>Lo que sí logra un colchón es <b>demorar el inicio del vertido</b> y <b>absorber por completo tormentas de 50 a 100 mm</b>, que son las frecuentes. En el 15F, con el dique a −5 m, el vertedero habría empezado a volcar unas <b class="num" id="gain5">5 h</b> más tarde: es el tiempo para evacuar las zonas de alta amenaza.</p>
+      <p>Lo que sí logra un colchón es <b>demorar el inicio del vertido</b> y <b>absorber por completo tormentas de 100 mm o más</b>, que son las frecuentes. En el 15F, con el dique a −5 m, el vertedero habría empezado a volcar unas <b class="num" id="gain5">5 h</b> más tarde: es el tiempo para evacuar las zonas de alta amenaza.</p>
     </div>
     <div class="callout">
       <span class="t">Regla de operación propuesta</span>
       <h3>Curva guía por temporada</h3>
       <ul>
         <li><b>Abril–octubre (estiaje):</b> llenar hasta el vertedero (0 m). Es la reserva para el invierno seco.</li>
-        <li><b>Noviembre–marzo (tormentas):</b> mantener <b class="num">−4 a −5 m</b>. Absorbe 72–80 mm con suelo normal (51–58 mm con suelo saturado) y deja 130–150 días de agua potable.</li>
+        <li><b>Noviembre–marzo (tormentas):</b> mantener <b class="num">−4 a −5 m</b>. Según el modelo calibrado absorbe 165–175 mm con suelo normal, 105–115 mm con suelo muy húmedo y unos 70–75 mm si está saturado como en el 15F, y deja 130–150 días de agua potable.</li>
         <li><b>Pronóstico de más de 80 mm en 48 h, o más de 53 mm en los 5 días previos:</b> bajar con la válvula hasta <b class="num">−6,8 m</b>. Equivale al 50 % del volumen, la "cota media" que recomienda el estudio del INA-CIRSA.</li>
         <li><b>Nunca bajar de −10 m</b> en temporada de lluvias. Debajo de ese nivel quedan menos de 50 días de reserva para la planta potabilizadora.</li>
       </ul>
@@ -711,7 +712,7 @@ td.mh.nd{color:var(--muted);background:transparent}
   <div class="tool" id="simulador">
     <div class="sec-h" style="gap:6px 24px">
       <h3>Simulador de laminación del embalse</h3>
-      <p class="note">Hidrograma de entrada por método SCS (número de curva e hidrograma unitario triangular, Tc ≈ 1 h), tránsito por el embalse con la curva cota-volumen y el vertedero libre de 60 m. Descuenta la toma de la planta potabilizadora.</p>
+      <p class="note">Hidrograma de entrada por método SCS calibrado con 37 tormentas medidas (número de curva según la humedad del suelo e hidrograma unitario triangular, Tc ≈ 1 h), tránsito por el embalse con la curva cota-volumen y el vertedero libre de 60 m. Descuenta la toma de la planta potabilizadora.</p>
     </div>
     <div class="sim">
       <div class="ctrl">
@@ -725,8 +726,8 @@ td.mh.nd{color:var(--muted);background:transparent}
         <div class="row"><div class="lab"><label for="sP">Lluvia total</label><b id="oP"></b></div><input type="range" id="sP" min="10" max="350" step="5" value="270"></div>
         <div class="row"><div class="lab"><label for="sH">Duración</label><b id="oH"></b></div><input type="range" id="sH" min="1" max="24" step="1" value="12"></div>
         <div class="row"><div class="lab"><label for="sAMC">Humedad previa del suelo</label><b id="oAMC"></b></div>
-          <select id="sAMC"><option value="1">I · seca (&lt;36 mm en 5 días)</option><option value="2">II · normal (36–53 mm)</option><option value="3" selected>III · saturada (&gt;53 mm)</option></select></div>
-        <div class="row"><div class="lab"><label for="sCN">Número de curva base (CN II)</label><b id="oCN"></b></div><input type="range" id="sCN" min="60" max="92" step="1" value="80"></div>
+          <select id="sAMC"><option value="10">Seco (lluvia antecedente 10 mm)</option><option value="40">Normal (40 mm)</option><option value="100">Muy húmedo (100 mm)</option><option value="150" selected>Saturado, como el 15F (150 mm)</option></select></div>
+        <div class="row"><div class="lab"><label for="sCN">Ajuste del número de curva</label><b id="oCN"></b></div><input type="range" id="sCN" min="-15" max="15" step="1" value="0"></div>
         <div class="row"><div class="lab"><label for="sQv">Válvula: descarga previa</label><b id="oQv"></b></div><input type="range" id="sQv" min="0" max="20" step="0.5" value="0"></div>
         <div class="row"><div class="lab"><label for="sTv">Horas de anticipación</label><b id="oTv"></b></div><input type="range" id="sTv" min="0" max="72" step="6" value="0"></div>
         <div class="row"><div class="lab"><label for="sEx">Toma planta potabilizadora</label><b id="oEx"></b></div><input type="range" id="sEx" min="0" max="600" step="25" value="400"></div>
@@ -748,7 +749,7 @@ td.mh.nd{color:var(--muted);background:transparent}
     </div>
     <div class="cols">
       <div class="chartbox"><svg id="trade" viewBox="0 0 520 300" width="100%" role="img" aria-label="Lluvia absorbible y días de autonomía según nivel"></svg>
-        <div class="legend"><span><i style="background:var(--water)"></i>Lluvia absorbida sin verter, suelo normal (mm)</span><span><i style="background:var(--water);opacity:.45"></i>Ídem, suelo saturado</span><span><i style="background:var(--sediment)"></i>Días de agua potable (eje derecho)</span></div>
+        <div class="legend"><span><i style="background:var(--water)"></i>Lluvia absorbida sin verter, suelo normal (mm)</span><span><i style="background:var(--water);opacity:.45"></i>Ídem, suelo muy húmedo</span><span><i style="background:var(--sediment)"></i>Días de agua potable (eje derecho)</span></div>
       </div>
       <div class="stack" style="gap:14px">
         <div class="inputs">
@@ -770,7 +771,7 @@ td.mh.nd{color:var(--muted);background:transparent}
   </div>
   <div class="scale">
     <div data-lvl="ok"><b>Normal</b><span>No llueve en la cuenca y el pronóstico de 48 h usa menos de la mitad del colchón.</span><span class="do">Lectura diaria de nivel y pluviómetros.</span></div>
-    <div data-lvl="warn"><b>Atención</b><span>Llueve más de 5 mm/h, el suelo está saturado, el pronóstico ocupa más de la mitad del colchón hay una tormenta fuerte (50 dBZ) a menos de 40 km o el río está 25 cm sobre lo normal.</span><span class="do">Pedir a APRHI que evalúe una descarga previa. Avisar a Defensa Civil municipal.</span></div>
+    <div data-lvl="warn"><b>Atención</b><span>Llueve más de 5 mm/h, el suelo está muy húmedo (100 mm o más de lluvia antecedente), el pronóstico ocupa más de la mitad del colchón hay una tormenta fuerte (50 dBZ) a menos de 40 km o el río está 25 cm sobre lo normal.</span><span class="do">Pedir a APRHI que evalúe una descarga previa. Avisar a Defensa Civil municipal.</span></div>
     <div data-lvl="bad"><b>Alerta</b><span>Más de 20 mm en una hora, el dique vierte, el pronóstico supera el colchón, el río está 50 cm sobre lo normal o sube 0,5 m en 30 minutos, o el radar marca granizo posible a menos de 20 km (o probable a menos de 40).</span><span class="do">Descarga previa, cierre de vados, sirenas y aviso a los barrios de alta amenaza.</span></div>
     <div data-lvl="crit"><b>Emergencia</b><span>Más de 40 mm en una hora o 60 mm en tres, el dique vierte con más de 0,5 m de carga, el río está 1 m sobre lo normal o sube 1 m en 30 minutos, o hay granizo probable a menos de 10 km del dique.</span><span class="do">Evacuar las zonas de alta amenaza sobre el río Ceballos y el arroyo Saldán.</span></div>
   </div>
@@ -792,6 +793,7 @@ td.mh.nd{color:var(--muted);background:transparent}
         <tr><td>Planta potabilizadora</td><td class="num">≈400 m³/h · Río Ceballos, Unquillo, Mendiolaza</td></tr>
         <tr><td>Población servida</td><td class="num">≈50.000 (Río Ceballos 26.700, censo 2022)</td></tr>
         <tr><td>Curva cota-volumen (ajustada)</td><td class="num">V = 3,3·(h/34)<sup>3,09</sup> hm³</td></tr>
+        <tr><td>Escurrimiento (calibrado)</td><td class="num">CN = 34 + 0,32 × lluvia antecedente (mm), mínimo 3,5 % de la lluvia</td></tr>
       </table></div>
       <p class="note">La curva cota-volumen se ajustó a los tres datos publicados (3,3 hm³ y 30 ha al vertedero, 4,0 hm³ a +2 m) y los reproduce dentro del 2 %. Con el vertedero de 60 m, 360 m³/s corresponde a 2,0 m de carga, que coincide con la cota de embalse máximo.</p>
     </div>
@@ -799,11 +801,35 @@ td.mh.nd{color:var(--muted);background:transparent}
       <h3>Límites del modelo</h3>
       <ol class="list">
         <li>No hay registro pluviográfico público del 15F en la cuenca alta. Se usó 270 mm en 12 h (rango publicado 250–300 mm) con pico nocturno.</li>
-        <li>El número de curva (CN 80, 90 saturado) es una estimación para monte serrano degradado sobre roca. En la tormenta del 13–14/11/2026 sobrestimó el escurrimiento: conviene calibrarlo con más crecidas medidas.</li>
+        <li>El escurrimiento está calibrado con 37 tormentas medidas entre 2023 y 2026 (lluvia de los pluviómetros de la cuenca y subida del dique, datos de APRHI publicados por el OHMC). Ninguna de esas tormentas se acercó al 15F, así que para lluvias extremas el modelo extrapola.</li>
         <li>El modelo no incluye los aportes aguas abajo del dique (arroyos Seco, Cabana, Unquillo, La Ensenada), que también causaron daños el 15F.</li>
         <li>La capacidad de la válvula de fondo y la cota de la toma de la planta no están publicadas. Ambas son parámetros editables.</li>
         <li>Es una herramienta de apoyo. No reemplaza los protocolos de APRHI ni de Defensa Civil.</li>
       </ol>
+    </div>
+  </div>
+</section>
+
+<!-- Calibración -->
+<section class="sec" id="calibracion">
+  <div class="sec-h">
+    <span class="tag">El modelo aprende de los datos del OHMC</span>
+    <h2>Calibración con 37 tormentas reales</h2>
+    <p>Para cada tormenta desde fines de 2023 se comparó la lluvia de los pluviómetros de la cuenca con lo que subió el dique, descontando la toma de agua potable y la evaporación. Así se mide cuánta lluvia llega de verdad al embalse.</p>
+  </div>
+  <div class="cols">
+    <div class="chartbox"><svg id="calib" viewBox="0 0 440 320" width="100%" role="img" aria-label="Escurrimiento medido contra el calculado por el modelo anterior y el calibrado"></svg>
+      <div class="legend"><span><i style="background:var(--chart-out)"></i>Modelo anterior (CN 80–90)</span><span><i style="background:var(--water)"></i>Modelo calibrado</span><span><i style="background:var(--muted)"></i>Acierto perfecto</span></div>
+    </div>
+    <div class="stack" style="gap:12px">
+      <div class="kpis" id="calKpis"></div>
+      <ul class="list">
+        <li>En la mayoría de las tormentas solo el <b>2 a 5 %</b> de la lluvia llega al embalse: la cuenca absorbe casi todo.</li>
+        <li>Cuando llueve varios días seguidos el suelo se satura y el escurrimiento salta al <b>15–28 %</b>, como en marzo de 2025.</li>
+        <li>Por eso el modelo usa la <b>lluvia antecedente de 20 días</b> (cada día pierde un 10 % de peso) y no un valor fijo.</li>
+        <li>El modelo anterior exageraba el escurrimiento unas <b>5 veces</b> y daba alertas de más.</li>
+      </ul>
+      <p class="note">Las tormentas en las que el dique ya vertía no sirven para medir la entrada y quedaron afuera. Fuente: archivo horario de APRHI vía OHMC. Cálculo en tools/calibrar.js.</p>
     </div>
   </div>
 </section>
@@ -842,9 +868,13 @@ const A=36.88, VSP=3.3e6, HSP=34, NEXP=3.09, LW=60, CW=2.1, TC=1.0, ASP=0.30e6;
 const vol=d=>{const h=Math.max(0,HSP+d);return VSP*Math.pow(h/HSP,NEXP)};
 const lev=V=>HSP*Math.pow(Math.max(V,0)/VSP,1/NEXP)-HSP;
 const area=d=>ASP*Math.pow(Math.max(0,HSP+d)/HSP,NEXP-1);
-const cnAmc=(cn,amc)=>amc==1?cn/(2.281-0.01281*cn):amc==3?Math.min(98,cn/(0.427+0.00573*cn)):cn;
-const runoffMM=(P,cn)=>{const S=25400/cn-254,Ia=0.2*S;return P>Ia?(P-Ia)**2/(P-Ia+S):0};
-const absorbP=(room,cn)=>{const S=25400/cn-254,Ia=0.2*S,Q=room/(A*1e3);return (Q+Math.sqrt(Q*Q+4*Q*S))/2+Ia};
+// Modelo calibrado con 37 tormentas medidas (APRHI/OHMC 2023–2026): CN según la lluvia antecedente (API) y escurrimiento mínimo del 3,5 %
+const CAL={a:34,b:0.32,piso:0.035};
+const cnCal=api=>Math.max(30,Math.min(95,CAL.a+CAL.b*(api||0)));
+const scs=(P,cn)=>{const S=25400/cn-254,Ia=0.2*S;return P>Ia?(P-Ia)**2/(P-Ia+S):0};
+const runoffMM=(P,cn)=>Math.max(scs(P,cn),CAL.piso*P);
+const absorbP=(room,cn)=>{if(room<=0)return 0;const Q=room/(A*1e3);let lo=0,hi=2000;for(let i=0;i<60;i++){const m=(lo+hi)/2;if(runoffMM(m,cn)>Q)hi=m;else lo=m}return lo};
+const API_REF={seco:10,normal:40,humedo:100,saturado:150};
 const fmt=(x,d=1)=>x.toLocaleString("es-AR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const $=id=>document.getElementById(id);
 const store={get(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -859,7 +889,7 @@ function simulate(o){
   const dStart=lev(V);
   const rain=hyeto(o.P,o.H), S=25400/o.cn-254, Ia=0.2*S;
   let Pc=0,Qc=0;const qh=[];
-  for(const p of rain){Pc+=p;const Q=Pc>Ia?(Pc-Ia)**2/(Pc-Ia+S):0;qh.push(Q-Qc);Qc=Q}
+  for(const p of rain){Pc+=p;const Q=Math.max(Pc>Ia?(Pc-Ia)**2/(Pc-Ia+S):0,CAL.piso*Pc);qh.push(Q-Qc);Qc=Q}
   const tp=.5+.6*TC,tb=2.67*tp,qp=.208*A/tp;
   const T=Math.max(24,o.H+10), steps=Math.ceil(T*3600/dt);
   const t=[],qin=[],qout=[],lv=[];
@@ -913,9 +943,11 @@ function rainStats(){
   const cur=$("curDate").value;
   const last5=rows.filter(r=>r.date<=cur&&r.date>isoDay(-5)).map(r=>avgB(r.v));
   const p5=last5.reduce((s,x)=>s+x,0);
-  const amc=p5<36?1:p5<=53?2:3;
+  let api=0;rows.forEach(r=>{if(r.date>cur)return;const d=Math.round((Date.parse(cur)-Date.parse(r.date))/864e5);if(d>=0&&d<20)api+=avgB(r.v)*Math.pow(0.9,d)});
+  if(liveApi!=null)api=liveApi;
+  const amc=api>=API_REF.humedo?3:api>=API_REF.normal?2:1;
   const maxDay=rows.length?Math.max(...rows.map(r=>avgB(r.v))):0;
-  return {p5,amc,fcst:avgB(fc),maxDay};
+  return {p5,api,amc,fcst:avgB(fc),maxDay};
 }
 
 // ---------- Limnímetro sobre la foto ----------
@@ -943,7 +975,7 @@ function drawGauge(d,target){
 
 // ---------- Estado ----------
 const LVL={Normal:"ok","Atención":"warn",Alerta:"bad",Emergencia:"crit"};
-let liveAlert=null;
+let liveAlert=null, liveApi=null;
 function setLevelUI(lvl,cls,txt,src){
   document.querySelectorAll("#topbar,#verdict").forEach(el=>el.dataset.lvl=cls);
   $("heroLevel").textContent=lvl; $("heroReason").textContent=txt; $("heroSrc").textContent=src||"";
@@ -953,7 +985,7 @@ function update(){
   const d=+$("curLevel").value||0;
   store.set("lq_level"+K,d);store.set("lq_date"+K,$("curDate").value);
   const rs=rainStats();
-  const cn=cnAmc(80,rs.amc);
+  const cn=cnCal(rs.api);
   const room=Math.max(0,vol(0)-vol(Math.min(d,0)));
   const absorb=room>0?absorbP(room,cn):0;
   const qrun=runoffMM(rs.fcst,cn)*A*1e3;
@@ -963,7 +995,7 @@ function update(){
   let lvl,cls,txt;
   if(d>0.5||rs.maxDay>=150){lvl="Emergencia";cls="crit";txt="Vertido intenso o lluvia extrema registrada."}
   else if(ratio>=1||d>=0&&rs.fcst>15){lvl="Alerta";cls="bad";txt="El pronóstico supera el colchón: el vertedero va a volcar."}
-  else if(ratio>=.5||rs.amc===3){lvl="Atención";cls="warn";txt=rs.amc===3?"Suelo saturado: la próxima lluvia escurre casi entera.":"El pronóstico ocupa más de la mitad del colchón."}
+  else if(ratio>=.5||rs.amc===3){lvl="Atención";cls="warn";txt=rs.amc===3?"Suelo muy húmedo: la cuenca está escurriendo mucho más que lo habitual.":"El pronóstico ocupa más de la mitad del colchón."}
   else{lvl="Normal";cls="ok";txt="El colchón actual absorbe la lluvia pronosticada."}
   if(liveAlert){lvl=liveAlert.etiqueta;cls=LVL[lvl]||"ok";txt=liveAlert.motivo||"No llueve en la cuenca y el pronóstico no compromete al dique.";}
   setLevelUI(lvl,cls,txt,liveAlert?liveAlert.src:"Calculado con el nivel, las lluvias y el pronóstico cargados en esta página.");
@@ -973,45 +1005,45 @@ function update(){
   const tcls=Math.abs(d-target)<0.6?"ok":(d>target?"warn":"ok");
   drawGauge(d,target);
   const ro=[
-    {k:"Colchón bajo el vertedero",v:fmt(room/1e6,2)+"<small>hm³</small>",s:"Absorbe ~"+fmt(absorb,0)+" mm con suelo "+["","seco","normal","saturado"][rs.amc],c:room>0?"ok":"bad"},
-    {k:"Lluvia en 5 días",v:fmt(rs.p5,0)+"<small>mm</small>",s:"Suelo "+["","seco","normal","saturado"][rs.amc]+" (CN "+fmt(cn,0)+")",c:rs.amc===3?"warn":"ok"},
+    {k:"Colchón bajo el vertedero",v:fmt(room/1e6,2)+"<small>hm³</small>",s:"Absorbe ~"+fmt(absorb,0)+" mm de lluvia sin verter",c:room>0?"ok":"bad"},
+    {k:"Humedad del suelo",v:fmt(rs.api,0)+"<small>mm</small>",s:"Lluvia antecedente de 20 días · suelo "+["","seco","normal","muy húmedo"][rs.amc]+" (CN "+fmt(cn,0)+")",c:rs.amc===3?"warn":"ok"},
     {k:"Pronóstico 48 h",v:fmt(rs.fcst,0)+"<small>mm</small>",s:fmt(qrun/1e6,2)+" hm³ de escurrimiento · "+(room>0?fmt(Math.min(ratio*100,999),0)+" % del colchón":"sin colchón"),c:ratio>=1?"bad":ratio>=.5?"warn":"ok"},
     {k:"Nivel guía hoy",v:(target===0?"0,0":fmt(target,1))+"<small>m</small>",s:(wet?"Temporada de tormentas":"Estiaje: llenar")+" · agua potable para "+fmt(aut,0)+" días",c:tcls}
   ];
   $("status").innerHTML=ro.map(t=>"<div class='ro' data-lvl='"+t.c+"'><span class='k'><span class='flag'></span>"+t.k+"</span><span class='v'>"+t.v+"</span><span class='s'>"+t.s+"</span></div>").join("");
   const s=rainStats();
   $("rainSummary").innerHTML=[
-    ["Acumulado 5 días",fmt(s.p5,0)+" mm"],["Condición del suelo","AMC "+["","I seca","II normal","III saturada"][s.amc]],["Día más lluvioso",fmt(s.maxDay,0)+" mm"],["Pronóstico vs. colchón",room>0?fmt(Math.min(ratio*100,999),0)+" %":"sin colchón"]
+    ["Acumulado 5 días",fmt(s.p5,0)+" mm"],["Lluvia antecedente",fmt(s.api,0)+" mm · CN "+fmt(cnCal(s.api),0)],["Día más lluvioso",fmt(s.maxDay,0)+" mm"],["Pronóstico vs. colchón",room>0?fmt(Math.min(ratio*100,999),0)+" %":"sin colchón"]
   ].map(x=>"<div class='kpi'><div class='k'>"+x[0]+"</div><div class='v'>"+x[1]+"</div></div>").join("");
   renderTrade(d);
 }
 
 // ---------- 15F barras ----------
 function render15(){
-  const lo=runoffMM(270,80)*A*1e3, hi=runoffMM(270,cnAmc(80,3))*A*1e3;
+  const lo=runoffMM(270,cnCal(API_REF.humedo))*A*1e3, hi=runoffMM(270,cnCal(API_REF.saturado))*A*1e3;
   $("v15lo").textContent=fmt(lo/1e6,1);$("v15hi").textContent=fmt(hi/1e6,1)+" hm³";
   const max=hi*1.05;
   const items=[["Escurrimiento 15F",hi,"var(--crit)",fmt(hi/1e6,1)+" hm³"],["Embalse completo",VSP,"var(--water)","3,3 hm³"],["Colchón a −13 m",vol(0)-vol(-13),"var(--water)",fmt((vol(0)-vol(-13))/1e6,1)+" hm³"],["Colchón a −5 m",vol(0)-vol(-5),"var(--water)",fmt((vol(0)-vol(-5))/1e6,1)+" hm³"]];
   $("bars15").innerHTML=items.map(i=>"<div class='bar'><span>"+i[0]+"</span><span class='track'><span class='fill' style='width:"+(i[1]/max*100)+"%;background:"+i[2]+"'></span></span><span class='num'>"+i[3]+"</span></div>").join("");
-  const a=simulate({d0:0,P:270,H:12,cn:cnAmc(80,3),qv:0,tv:0,ex:400}), b=simulate({d0:-5,P:270,H:12,cn:cnAmc(80,3),qv:0,tv:0,ex:400});
+  const a=simulate({d0:0,P:270,H:12,cn:cnCal(API_REF.saturado),qv:0,tv:0,ex:400}), b=simulate({d0:-5,P:270,H:12,cn:cnCal(API_REF.saturado),qv:0,tv:0,ex:400});
   $("gain5").textContent=fmt((b.onset||0)-(a.onset||0),0)+" h";
 }
 
 // ---------- Simulador ----------
-const PRESETS={f15:{P:270,H:12,amc:3},y16:{P:150,H:10,amc:2},conv:{P:80,H:3,amc:2}};
+const PRESETS={f15:{P:270,H:12,amc:API_REF.saturado},y16:{P:150,H:10,amc:API_REF.normal},conv:{P:80,H:3,amc:API_REF.normal}};
 document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("[data-preset]").forEach(x=>x.classList.toggle("on",x===b));
   const k=b.dataset.preset;
-  if(k==="reg"){const s=rainStats();$("sP").value=Math.max(10,Math.round(s.fcst/5)*5);$("sH").value=12;$("sAMC").value=s.amc;$("sD0").value=Math.max(-14,Math.min(0,+$("curLevel").value||0))}
+  if(k==="reg"){const s=rainStats();$("sP").value=Math.max(10,Math.round(s.fcst/5)*5);$("sH").value=12;$("sAMC").value=[10,40,100,150].reduce((b,v)=>Math.abs(v-s.api)<Math.abs(b-s.api)?v:b,40);$("sD0").value=Math.max(-14,Math.min(0,+$("curLevel").value||0))}
   else{const p=PRESETS[k];$("sP").value=p.P;$("sH").value=p.H;$("sAMC").value=p.amc}
   runSim();
 });
 ["sD0","sP","sH","sAMC","sCN","sQv","sTv","sEx"].forEach(id=>$(id).addEventListener("input",()=>{runSim();if(id==="sEx")update()}));
 
 function runSim(){
-  const o={d0:+$("sD0").value,P:+$("sP").value,H:+$("sH").value,cn:cnAmc(+$("sCN").value,+$("sAMC").value),qv:+$("sQv").value,tv:+$("sTv").value,ex:+$("sEx").value};
+  const o={d0:+$("sD0").value,P:+$("sP").value,H:+$("sH").value,cn:Math.max(30,Math.min(98,cnCal(+$("sAMC").value)+(+$("sCN").value))),qv:+$("sQv").value,tv:+$("sTv").value,ex:+$("sEx").value};
   $("oD0").textContent=fmt(o.d0,2)+" m";$("oP").textContent=o.P+" mm";$("oH").textContent=o.H+" h";$("oAMC").textContent="CN "+fmt(o.cn,0);
-  $("oCN").textContent=$("sCN").value;$("oQv").textContent=fmt(o.qv,1)+" m³/s";$("oTv").textContent=o.tv+" h";$("oEx").textContent=o.ex+" m³/h";
+  $("oCN").textContent=(+$("sCN").value>0?"+":"")+$("sCN").value;$("oQv").textContent=fmt(o.qv,1)+" m³/s";$("oTv").textContent=o.tv+" h";$("oEx").textContent=o.ex+" m³/h";
   const r=simulate(o);
   const room=vol(0)-vol(r.dStart);
   const k=[
@@ -1060,7 +1092,7 @@ function niceTicks(max,n){const raw=max/n,p=Math.pow(10,Math.floor(Math.log10(ra
 function renderTrade(cur){
   const ev=+$("evap").value||0,dmin=+$("dmin").value||-14,ex=+$("sEx").value*24;
   const lv=[];for(let d=0;d>=Math.max(dmin,-14);d-=0.5)lv.push(d);
-  const data=lv.map(d=>{const room=vol(0)-vol(d);return{d,room,pII:room>0?absorbP(room,80):0,pIII:room>0?absorbP(room,cnAmc(80,3)):0,aut:Math.max(0,vol(d)-vol(dmin))/(ex+ev/1000*area(d))}});
+  const data=lv.map(d=>{const room=vol(0)-vol(d);return{d,room,pII:room>0?absorbP(room,cnCal(API_REF.normal)):0,pIII:room>0?absorbP(room,cnCal(API_REF.humedo)):0,aut:Math.max(0,vol(d)-vol(dmin))/(ex+ev/1000*area(d))}});
   const W=520,H=300,m={l:44,r:48,t:14,b:36},iw=W-m.l-m.r,ih=H-m.t-m.b;
   const dlo=data[data.length-1].d, pmax=Math.ceil(Math.max(...data.map(x=>x.pII))/25)*25, amax=Math.ceil(Math.max(...data.map(x=>x.aut))/50)*50||50;
   const x=d=>m.l+(d-0)/(dlo-0)*iw, yp=p=>m.t+ih-p/pmax*ih, ya=a=>m.t+ih-a/amax*ih;
@@ -1074,13 +1106,13 @@ function renderTrade(cur){
   s+="<path d='"+pth(p=>p.pIII,yp)+"' fill='none' stroke='var(--water)' stroke-width='2' opacity='.45'/>";
   s+="<path d='"+pth(p=>p.pII,yp)+"' fill='none' stroke='var(--water)' stroke-width='2.4'/>";
   s+="<path d='"+pth(p=>p.aut,ya)+"' fill='none' stroke='var(--sediment)' stroke-width='2.4'/>";
-  if(cur<=0&&cur>=dlo){const room=vol(0)-vol(cur),p=room>0?absorbP(room,80):0;s+="<line x1='"+x(cur)+"' x2='"+x(cur)+"' y1='"+m.t+"' y2='"+(m.t+ih)+"' stroke='var(--ink)' stroke-width='1'/><circle cx='"+x(cur)+"' cy='"+yp(p)+"' r='4' fill='var(--water)'/><text x='"+(x(cur)+5)+"' y='"+(m.t+ih-6)+"' style='fill:var(--ink)'>hoy</text>"}
+  if(cur<=0&&cur>=dlo){const room=vol(0)-vol(cur),p=room>0?absorbP(room,cnCal(API_REF.normal)):0;s+="<line x1='"+x(cur)+"' x2='"+x(cur)+"' y1='"+m.t+"' y2='"+(m.t+ih)+"' stroke='var(--ink)' stroke-width='1'/><circle cx='"+x(cur)+"' cy='"+yp(p)+"' r='4' fill='var(--water)'/><text x='"+(x(cur)+5)+"' y='"+(m.t+ih-6)+"' style='fill:var(--ink)'>hoy</text>"}
   s+="<text x='"+m.l+"' y='"+(H-4)+"'>mm absorbibles</text><text x='"+(W-m.r)+"' y='"+(H-4)+"' text-anchor='end' style='fill:var(--sediment)'>días de agua</text>";
   $("trade").innerHTML=s;
   const show=[0,-1,-2,-3,-4,-5,-6,-6.8,-8,-10,-13].filter(d=>d>=dmin);
-  let h="<thead><tr><th>Nivel</th><th>Colchón</th><th>Lluvia absorbida (normal)</th><th>(saturado)</th><th>Agua potable</th></tr></thead><tbody>";
+  let h="<thead><tr><th>Nivel</th><th>Colchón</th><th>Lluvia absorbida (suelo normal)</th><th>(muy húmedo)</th><th>Agua potable</th></tr></thead><tbody>";
   show.forEach(d=>{const room=vol(0)-vol(d),a=Math.max(0,vol(d)-vol(dmin))/(ex+ev/1000*area(d));const hl=(d===-4||d===-5)?" class='hl'":"";
-    h+="<tr"+hl+"><td class='num'>"+(d===0?"0":fmt(d,1))+" m</td><td class='num'>"+fmt(room/1e6,2)+" hm³</td><td class='num'>"+(room>0?fmt(absorbP(room,80),0):"–")+" mm</td><td class='num'>"+(room>0?fmt(absorbP(room,cnAmc(80,3)),0):"–")+" mm</td><td class='num'>"+fmt(a,0)+" días</td></tr>"});
+    h+="<tr"+hl+"><td class='num'>"+(d===0?"0":fmt(d,1))+" m</td><td class='num'>"+fmt(room/1e6,2)+" hm³</td><td class='num'>"+(room>0?fmt(absorbP(room,cnCal(API_REF.normal)),0):"–")+" mm</td><td class='num'>"+(room>0?fmt(absorbP(room,cnCal(API_REF.humedo)),0):"–")+" mm</td><td class='num'>"+fmt(a,0)+" días</td></tr>"});
   $("tradeTable").innerHTML=h+"</tbody>";
 }
 
@@ -1092,24 +1124,41 @@ window.LQ_APP={
     if(o.rows&&o.rows.length)rows=o.rows;
     if(o.fc)fc=o.fc;
     if(o.alert)liveAlert=o.alert;
+    if(o.api!=null)liveApi=o.api;
+    if(o.evap!=null)$("evap").value=o.evap;
     if(o.time)$("tbTime").textContent=o.time;
     renderRain();update();
   }
 };
+// ---------- Gráfico de calibración ----------
+(function(){
+  const EV=[["2023-11-28",29.7,9,1.4],["2023-12-31",67.4,28,1.3],["2024-01-06",77.8,55,2.8],["2024-02-08",75,1,2],["2024-02-11",62,61,1],["2024-02-22",50.9,45,1.5],["2024-04-05",36,7,0.9],["2024-04-11",52.3,32,1.6],["2024-10-06",63.5,0,0.9],["2024-10-13",31.8,41,0.6],["2024-10-22",68.6,42,2.8],["2024-11-18",24,18,0.9],["2024-11-24",138,26,7.2],["2024-12-17",53.5,17,1.2],["2024-12-23",33,40,0.5],["2024-12-31",21.4,33,0.2],["2025-01-17",77.1,26,2.1],["2025-01-24",39.7,58,1.6],["2025-02-11",43.9,12,1.8],["2025-02-26",59.8,31,2.4],["2025-03-07",134.1,43,20.6],["2025-03-11",62.5,135,17.2],["2025-03-20",25.2,67,6.7],["2025-10-31",26.6,13,1],["2025-11-06",25.6,24,0.7],["2025-11-29",41.6,14,1.9],["2025-12-06",24.2,26,1.2],["2025-12-13",36,27,1.8],["2025-12-20",46,31,2.3],["2026-01-31",33.3,44,1.6],["2026-02-15",27.4,25,1.7],["2026-02-21",23.4,27,0.8],["2026-03-02",43.5,23,4.3],["2026-03-13",20.7,73,0.4],["2026-10-16",49.3,25,2],["2026-10-22",40.1,40,2.2],["2026-10-31",40.7,46,0.7]];
+  const old=e=>{const amc=e[2]>=53?3:e[2]>=36?2:1,c=amc===1?80/(2.281-0.01281*80):amc===3?80/(0.427+0.00573*80):80;return scs(e[1],c)};
+  const nue=e=>runoffMM(e[1],cnCal(e[2]));
+  const W=440,H=320,m={l:44,r:12,t:12,b:36},iw=W-m.l-m.r,ih=H-m.t-m.b,mx=25;
+  const x=v=>m.l+Math.min(v,mx)/mx*iw,y=v=>m.t+ih-Math.min(v,mx)/mx*ih;
+  let s="";[0,5,10,15,20,25].forEach(v=>{s+="<line x1='"+m.l+"' x2='"+(W-m.r)+"' y1='"+y(v)+"' y2='"+y(v)+"' stroke='var(--line-2)'/><text x='"+(m.l-6)+"' y='"+(y(v)+3.5)+"' text-anchor='end'>"+v+"</text><text x='"+x(v)+"' y='"+(H-m.b+16)+"' text-anchor='middle'>"+v+"</text>"});
+  s+="<line x1='"+x(0)+"' y1='"+y(0)+"' x2='"+x(mx)+"' y2='"+y(mx)+"' stroke='var(--muted)' stroke-dasharray='4 4'/>";
+  EV.forEach(e=>{const o=old(e),n=nue(e);s+="<circle cx='"+x(e[3])+"' cy='"+y(o)+"' r='3.5' fill='var(--chart-out)' opacity='.7'><title>"+e[0]+": medido "+e[3]+" mm, anterior "+o.toFixed(1)+" mm</title></circle><circle cx='"+x(e[3])+"' cy='"+y(n)+"' r='4' fill='var(--water)'><title>"+e[0]+": medido "+e[3]+" mm, calibrado "+n.toFixed(1)+" mm</title></circle>"});
+  s+="<text x='"+(W-m.r)+"' y='"+(H-4)+"' text-anchor='end'>escurrimiento medido (mm)</text><text x='"+m.l+"' y='"+(m.t-2)+"'>calculado (mm) · valores mayores a 25 se muestran en el borde</text>";
+  $("calib").innerHTML=s;
+  const rm=f=>Math.sqrt(EV.reduce((a,e)=>a+(f(e)-e[3])**2,0)/EV.length);
+  $("calKpis").innerHTML=[["Tormentas",EV.length],["Error anterior",fmt(rm(old),1)+" mm"],["Error calibrado",fmt(rm(nue),1)+" mm"]].map(k=>"<div class='kpi'><div class='k'>"+k[0]+"</div><div class='v'>"+k[1]+"</div></div>").join("");
+})();
 renderRain();render15();runSim();update();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
-<script src="mapdata.js"></script>
-<script src="map3d.js"></script>
+<script src="mapdata.js?v=mwio75w1"></script>
+<script src="map3d.js?v=mwio75w1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="radar.js"></script>
-<script src="monitor/engine.js"></script>
-<script src="monitor/ui.js"></script>
-<script src="monitor/historia-ui.js"></script>
-<script src="rio3d-data.js"></script>
-<script src="rio3d.js"></script>
+<script src="radar.js?v=mwio75w1"></script>
+<script src="monitor/engine.js?v=mwio75w1"></script>
+<script src="monitor/ui.js?v=mwio75w1"></script>
+<script src="monitor/historia-ui.js?v=mwio75w1"></script>
+<script src="rio3d-data.js?v=mwio75w1"></script>
+<script src="rio3d.js?v=mwio75w1"></script>
 
 </body>
 </html>

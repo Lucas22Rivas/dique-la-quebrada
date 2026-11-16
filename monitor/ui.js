@@ -79,7 +79,7 @@
     const tiles = [
       { k: "Nivel del dique", v: d ? (d.respectoVertedero > 0 ? "+" : "") + fmt(d.respectoVertedero, 2) + "<small>m</small>" : "–", s: d ? "Cota " + fmt(d.cota, 2) + " m" + (d.cambio24h == null ? "" : " · " + (d.cambio24h >= 0 ? "+" : "") + fmt(d.cambio24h * 100, 0) + " cm en 24 h") : "Sin dato", sp: d && spark(d.serie, 160, 26, "var(--water)"), c: d && d.respectoVertedero > 0 ? "bad" : "ok" },
       { k: "Lluvia en la cuenca ahora", v: fmt(cu.h1, 1) + "<small>mm/h</small>", s: fmt(cu.h3, 1) + " mm en 3 h · " + fmt(cu.h24, 1) + " mm en 24 h", c: cu.h1 >= 20 ? "bad" : cu.h1 >= 5 ? "warn" : "ok" },
-      { k: "Últimos 5 días", v: fmt(cu.d5, 0) + "<small>mm</small>", s: "Suelo " + ["", "seco", "normal", "saturado"][a.amc] + " · el dique absorbe ~" + fmt(a.lluviaAbsorbible, 0) + " mm", c: a.amc === 3 ? "warn" : "ok" },
+      { k: "Humedad del suelo", v: fmt(a.api != null ? a.api : cu.d5, 0) + "<small>mm</small>", s: "Lluvia antecedente · suelo " + ["", "seco", "normal", "muy húmedo"][a.amc] + " · el dique absorbe ~" + fmt(a.lluviaAbsorbible, 0) + " mm", c: a.amc === 3 ? "warn" : "ok" },
       { k: "Pronóstico 24 h", v: p ? fmt(p.h24, 0) + "<small>mm</small>" : "–", s: p ? fmt(p.h6, 0) + " mm en 6 h · " + fmt(p.h48, 0) + " mm en 48 h (modelo)" : "Sin dato", c: p && a.lluviaAbsorbible != null && p.h24 >= a.lluviaAbsorbible ? "bad" : "ok" },
     ];
     $("liveTiles").innerHTML = tiles.map(t => `<div class="ro" data-lvl="${t.c}"><span class="k"><span class="flag"></span>${t.k}</span><span class="v">${t.v}</span><span class="s">${t.s}</span>${t.sp || ""}</div>`).join("");
@@ -99,7 +99,7 @@
       const rows = dias.map(k => ({ date: k, v: e.pluviometros.map(l => l.diario && l.diario[k] != null ? l.diario[k] : "") }));
       const fcv = p ? Math.round(p.h48) : null;
       window.LQ_APP.setLive({ level: d ? d.respectoVertedero : null, levelNote: d ? "Sensor APRHI en vivo (OHMC), " + hora(d.dato) : null,
-        date: dias[6], rows, fc: fcv == null ? null : [fcv, fcv, fcv, fcv],
+        date: dias[6], rows, api: a.api != null ? a.api : null, evap: e.evapotranspiracion != null ? e.evapotranspiracion : null, fc: fcv == null ? null : [fcv, fcv, fcv, fcv],
         alert: { etiqueta: a.etiqueta, motivo: a.motivos.length ? a.motivos.map(m => m.texto).slice(0, 2).join(". ") + "." : "No llueve en la cuenca y el pronóstico no compromete al dique.", src: "En vivo: pluviómetros, dique y río de APRHI (OHMC), calculado " + hace(e.generado) + "." },
         time: new Date(e.generado).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) });
     }

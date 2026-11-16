@@ -5,14 +5,19 @@
   const A = 36.88, VSP = 3.3e6, HSP = 34, NEXP = 3.09;
   const vol = d => VSP * Math.pow(Math.max(0, HSP + d) / HSP, NEXP);
   const cnAmc = (cn, amc) => amc === 1 ? cn / (2.281 - 0.01281 * cn) : amc === 3 ? Math.min(98, cn / (0.427 + 0.00573 * cn)) : cn;
-  const absorbP = (room, cn) => { if (room <= 0) return 0; const S = 25400 / cn - 254, Ia = 0.2 * S, Q = room / (A * 1e3); return (Q + Math.sqrt(Q * Q + 4 * Q * S)) / 2 + Ia; };
-  const runoffMM = (P, cn) => { const S = 25400 / cn - 254, Ia = 0.2 * S; return P > Ia ? (P - Ia) ** 2 / (P - Ia + S) : 0; };
+  // Modelo calibrado con 37 tormentas medidas (APRHI/OHMC, 2023–2026): CN según la lluvia antecedente (API)
+  // y un escurrimiento mínimo del 3,5 % de la lluvia. Ver tools/calibrar.js.
+  const CAL = { a: 34, b: 0.32, piso: 0.035, min: 30, max: 95 };
+  const cnCal = api => Math.max(CAL.min, Math.min(CAL.max, CAL.a + CAL.b * (api || 0)));
+  const scs = (P, cn) => { const S = 25400 / cn - 254, Ia = 0.2 * S; return P > Ia ? (P - Ia) ** 2 / (P - Ia + S) : 0; };
+  const runoffMM = (P, cn) => Math.max(scs(P, cn), CAL.piso * P);
+  const absorbP = (room, cn) => { if (room <= 0) return 0; const Q = room / (A * 1e3); let lo = 0, hi = 2000; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (runoffMM(m, cn) > Q) hi = m; else lo = m; } return lo; };
 
   const UMBRALES = {
     emergencia: { vertidoM: 0.5, lluvia1h: 40, lluvia3h: 60, subidaRio: 1.0 },
     alerta: { lluvia1h: 20, lluvia3h: 30, fraccion3h: 0.6, subidaRio: 0.5, intensidad: 30 },
     atencion: { lluvia1h: 5, fraccionPron48: 0.5, intensidad: 10 },
-    amc: { seco: 36, saturado: 53 },
+    humedo: 100, // lluvia antecedente (mm) desde la que la cuenca escurre mucho (CN ≥ 66)
     tormenta: { emergencia: { dbz: 60, km: 10 }, alerta: [{ dbz: 55, km: 20 }, { dbz: 60, km: 40 }], atencion: { dbz: 50, km: 40 } },
   };
   const NIVELES = ["normal", "atencion", "alerta", "emergencia"];
@@ -24,8 +29,9 @@
     const m = [];
     const subir = (n, txt) => m.push({ n, txt });
     const d = e.nivelDique;
-    const amc = e.lluvia.d5 >= UMBRALES.amc.saturado ? 3 : e.lluvia.d5 >= UMBRALES.amc.seco ? 2 : 1;
-    const cn = cnAmc(80, amc);
+    const api = e.lluvia.api != null ? e.lluvia.api : e.lluvia.d5 || 0;
+    const amc = api >= UMBRALES.humedo ? 3 : api >= 40 ? 2 : 1;
+    const cn = cnCal(api);
     const room = d == null ? null : Math.max(0, vol(0) - vol(Math.min(d, 0)));
     const absorbible = room == null ? null : absorbP(room, cn);
     const f = (x, k = 0) => x == null ? "–" : x.toFixed(k).replace(".", ",");
@@ -62,18 +68,18 @@
     if (e.lluvia.h1 >= UMBRALES.atencion.lluvia1h && e.lluvia.h1 < UMBRALES.alerta.lluvia1h) subir(1, "Llueve en la cuenca: " + f(e.lluvia.h1, 1) + " mm en la última hora");
     if (e.intensidad >= UMBRALES.atencion.intensidad && e.intensidad < UMBRALES.alerta.intensidad) subir(1, "Lluvia moderada ahora: " + f(e.intensidad) + " mm/h");
     if (absorbible != null && e.pronostico && e.pronostico.h48 >= UMBRALES.atencion.fraccionPron48 * absorbible && !(e.pronostico.h24 >= absorbible)) subir(1, "Pronóstico de 48 h: " + f(e.pronostico.h48) + " mm, más de la mitad de lo que absorbe el dique (" + f(absorbible) + " mm)");
-    if (amc === 3) subir(1, "Suelo saturado: " + f(e.lluvia.d5) + " mm en 5 días, la próxima lluvia escurre casi entera");
+    if (amc === 3) subir(1, "Suelo muy húmedo: " + f(api) + " mm de lluvia antecedente, la cuenca está escurriendo mucho más de lo habitual");
 
     const n = m.reduce((a, x) => Math.max(a, x.n), 0);
     m.sort((a, b) => b.n - a.n);
     return {
       nivel: NIVELES[n], etiqueta: ETIQUETA[NIVELES[n]], orden: n,
       motivos: m.map(x => ({ nivel: NIVELES[x.n], texto: x.txt })),
-      amc, cn: Math.round(cn), colchonHm3: room == null ? null : +(room / 1e6).toFixed(3), lluviaAbsorbible: absorbible == null ? null : Math.round(absorbible),
+      amc, api: Math.round(api), cn: Math.round(cn), colchonHm3: room == null ? null : +(room / 1e6).toFixed(3), lluviaAbsorbible: absorbible == null ? null : Math.round(absorbible),
       escurrimientoPronostico48Hm3: e.pronostico ? +(runoffMM(e.pronostico.h48, cn) * A / 1e3).toFixed(3) : null,
     };
   }
 
-  const api = { evaluar, UMBRALES, NIVELES, ETIQUETA, vol, absorbP, cnAmc };
+  const api = { evaluar, UMBRALES, NIVELES, ETIQUETA, vol, absorbP, cnAmc, cnCal, runoffMM, CAL };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LQ_MOTOR = api;
 })(typeof window !== "undefined" ? window : this);
