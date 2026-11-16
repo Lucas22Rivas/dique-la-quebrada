@@ -45,7 +45,16 @@ async function getJSON(url, tries = 3) {
   }
   return null;
 }
+// Si el OHMC falla, se lee el mismo sensor del portal de datos abiertos de APRHI (sólo ventanas cortas)
+const respaldo = new Set();
 async function serie(id, tipo, dias) {
+  try { return await serieOHMC(id, tipo, dias); }
+  catch (e) {
+    let s; try { s = await require("./aprhi.js").serie(id, tipo, dias, now); } catch (x) { throw e; }
+    respaldo.add(id); return s;
+  }
+}
+async function serieOHMC(id, tipo, dias) {
   const u = `${OHMC}/mediciones?station_id=${id}&start=${iso(now - dias * 864e5)}&end=${iso(now + 6e5)}&tipo_variable_id=${tipo}&limit=10000`;
   const j = await getJSON(u);
   return ((j && j.data) || []).filter(e => e.valor != null && Number.isFinite(+e.valor))
@@ -293,13 +302,14 @@ async function main() {
     generado: iso(now), sitio: SITIO, canalAvisos: NTFY,
     alerta: ev, evacuacion: evac, cuenca, evapotranspiracion: evap, camara: camara && { configurado: camara.configurado, error: camara.error || null, ultimo: camara.ultimo || null, estacion: camara.estacion ? camara.estacion.nombre : null }, modelo: { cn: ev.cn, api: ev.api, formula: "CN = 34 + 0,32 × API; escurrimiento mínimo 3,5 %" }, pluviometros: lluvias, dique, rios, pronostico, tormentas, historial,
     ultimoAviso: (aviso && aviso.enviado) || (avisoEvac && avisoEvac.enviado) ? iso(now) : (previo && previo.ultimoAviso) || null, aviso, avisoEvac,
-    umbrales: motor.UMBRALES, errores,
-    fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Open-Meteo · pronóstico", "Radar RMA1 · núcleos de tormenta (OHMC)", "Motor de alertas propio (umbrales provisorios)"],
+    umbrales: motor.UMBRALES, errores, respaldoAPRHI: [...respaldo],
+    fuentes: ["OHMC / APRHI · estaciones-fe.ohmc.ar", "Portal de datos abiertos APRHI (respaldo si el OHMC falla)", "Open-Meteo · pronóstico", "Radar RMA1 · núcleos de tormenta (OHMC)", "Motor de alertas propio (umbrales provisorios)"],
   };
   if (hist) { estado.ultimaCrecida = hist.eventos[0] || null; estado.normalRio = hist.normal; }
   fs.writeFileSync(path.join(OUT, "estado.json"), JSON.stringify(estado));
   console.log(`[${estado.generado}] ${ev.etiqueta} · cuenca ${cuenca.h1} mm/1h ${cuenca.h24} mm/24h ${cuenca.d5} mm/5d · dique ${dique ? dique.respectoVertedero : "?"} m · pron48 ${pronostico ? pronostico.h48 : "?"} mm · aviso ${aviso ? (aviso.enviado === undefined ? "simulado" : aviso.enviado) : "no"}`);
   ev.motivos.forEach(m => console.log("  -", m.nivel, m.texto));
+  if (respaldo.size) console.log("Leídas del portal APRHI (OHMC no respondió):", [...respaldo].join(", "));
   if (errores.length) console.log("Errores:", errores.join(" | "));
 }
 main().catch(e => { console.error(e); process.exit(1); });
