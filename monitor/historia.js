@@ -10,7 +10,7 @@ async function construir({ serie, getJSON, sitio, now, iso }) {
   const t0h = Math.floor(now / H) * H - 30 * 24 * H, t0m = Math.floor(now / M10) * M10 - 7 * 24 * H;
   let prev = null;
   try { prev = await getJSON(sitio + "data/historia.json?t=" + now, 1); } catch (e) { /* primera vez */ }
-  const fresco = prev && prev.version === 2 && now - Date.parse(prev.generado) < 2 * 24 * H;
+  const fresco = prev && prev.version === 2 && !prev.desactualizado && now - Date.parse(prev.generado) < 2 * 24 * H;
   const dias = fresco ? 0.3 : 30; // 7 h o 30 días
 
   // Mapas t -> valor (10 min) reconstruidos desde el historial previo

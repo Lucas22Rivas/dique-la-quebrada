@@ -169,7 +169,15 @@ async function main() {
     hist = await require("./historia.js").construir({ serie, getJSON, sitio: SITIO, now, iso });
     fs.writeFileSync(path.join(OUT, "historia.json"), JSON.stringify(hist));
     console.log("Historial:", hist.recarga ? "recarga completa (30 días)" : "actualizado", "·", hist.eventos.length, "crecidas en 30 días");
-  } catch (e) { errores.push("Historial: " + e.message); }
+  } catch (e) {
+    errores.push("Historial: " + e.message);
+    // Sin OHMC: conservar el último historial bueno (el publicado o el respaldo del repositorio) para no perder los gráficos
+    try {
+      let prev = null; try { prev = await getJSON(SITIO + "data/historia.json?t=" + now, 1); } catch (x) { }
+      if (!prev) { const loc = path.join(__dirname, "..", "archivo", "historia-respaldo.json"); if (fs.existsSync(loc)) prev = JSON.parse(fs.readFileSync(loc, "utf8")); }
+      if (prev) { prev.desactualizado = true; fs.writeFileSync(path.join(OUT, "historia.json"), JSON.stringify(prev)); console.log("Historial: se conserva el último disponible, generado", prev.generado); }
+    } catch (x) { }
+  }
 
   // Archivo histórico del año en curso: se actualiza una vez por día (o si falta)
   try {
