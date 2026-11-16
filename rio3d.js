@@ -84,7 +84,8 @@
   }
 
   // ---------- Datos y estado ----------
-  let Hd = null, ti = 0, ex = 40, playing = false, timer = null, T0 = 0, n = 0;
+  let Hd = null, ti = 0, ex = 40, playing = false, timer = null, T0 = 0, n = 0, vel = 1;
+  const PASO_MS = { 0.5: 600, 1: 300, 2: 150, 4: 70 }; // ms por cada 10 minutos de datos
   const KEYS = ["r98670", "r751", "r174264"];
   function valAt(k, i) { const a = Hd.m10.s[k] || []; for (let d = 0; d < 6; d++) { if (a[i - d] != null) return a[i - d]; } return null; }
   function draw() {
@@ -130,14 +131,18 @@
     });
     spark(); draw();
   }
-  function irA(t) { if (!Hd) return; stop(); const i = Math.round((t - T0) / 6e5); ti = Math.max(0, Math.min(n - 1, i - 30)); draw(); play(Math.min(n - 1, i + 60)); }
+  function irA(t) { if (!Hd) return; stop(); const i = Math.round((t - T0) / 6e5); ti = Math.max(0, Math.min(n - 1, i - 24)); draw(); play(Math.min(n - 1, i + 48)); }
   function play(until) {
     playing = true; $("r3Play").textContent = "❚❚ Pausar"; $("r3Play").setAttribute("aria-pressed", "true");
     clearInterval(timer); const end = until != null ? until : n - 1; if (ti >= end) ti = Math.max(0, end - 300);
-    timer = setInterval(() => { ti = Math.min(end, ti + 1); draw(); if (ti >= end) stop(); }, 60);
+    timer = setInterval(() => { ti = Math.min(end, ti + 1); draw(); if (ti >= end) stop(); }, PASO_MS[vel] || 300);
   }
   function stop() { playing = false; clearInterval(timer); $("r3Play").textContent = "▶ Reproducir"; $("r3Play").setAttribute("aria-pressed", "false"); }
   window.LQ_RIO3D = { irA };
+  document.querySelectorAll("[data-r3vel]").forEach(b => b.addEventListener("click", () => {
+    vel = +b.dataset.r3vel; document.querySelectorAll("[data-r3vel]").forEach(x => x.classList.toggle("on", x === b));
+    if (playing) { const end = +$("r3Time").max; stop(); play(end); }
+  }));
   $("r3Play").addEventListener("click", () => playing ? stop() : play());
   $("r3Time").addEventListener("input", e => { stop(); ti = +e.target.value; draw(); });
   $("r3Ex").addEventListener("input", e => { ex = +e.target.value; $("r3ExOut").textContent = "×" + ex; draw(); });

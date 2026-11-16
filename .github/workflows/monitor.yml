@@ -1,7 +1,11 @@
 name: Monitoreo Dique La Quebrada
 
-# Cada 10 minutos: lee pluviómetros, nivel del dique y sensores del río (OHMC/APRHI),
-# calcula la alerta, avisa por ntfy si sube y publica el sitio con data/estado.json actualizado.
+# Cada 10 minutos: lee pluviómetros, nivel del dique, sensores del río y celdas de tormenta (OHMC/APRHI),
+# calcula la alerta, avisa por ntfy si sube y publica el sitio con los datos actualizados.
+#
+# Los horarios programados de GitHub ("schedule") se demoran o se saltean, así que cada corrida
+# espera hasta la próxima marca de 10 minutos y se vuelve a lanzar sola (workflow_dispatch con el
+# token propio del repositorio). El "schedule" queda como respaldo para reiniciar la cadena si se corta.
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -13,6 +17,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write
 
 concurrency:
   group: monitor-pages
@@ -39,3 +44,22 @@ jobs:
       - name: Publicar sitio
         id: deploy
         uses: actions/deploy-pages@v4
+
+  siguiente:
+    needs: monitor
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Esperar a la próxima marca de 10 minutos
+        run: |
+          now=$(date +%s)
+          next=$(( (now / 600 + 1) * 600 ))
+          wait=$(( next - now - 60 ))
+          if [ $wait -lt 30 ]; then wait=$(( wait + 600 )); fi
+          echo "Esperando $wait segundos"
+          sleep $wait
+      - name: Lanzar la próxima corrida
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run monitor.yml --repo "$GITHUB_REPOSITORY" --ref main

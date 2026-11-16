@@ -296,6 +296,8 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
 .r3-track{position:relative;height:56px}
 .r3-track svg{position:absolute;inset:0 0 18px;width:100%;height:38px;background:var(--panel);border:1px solid var(--line);border-radius:4px}
 .r3-track input{position:absolute;left:0;right:0;bottom:0;width:100%}
+.r3-vel{display:grid;gap:6px;justify-items:end}
+@media (max-width:600px){.r3-vel{justify-items:start}}
 
 </style>
 
@@ -546,7 +548,7 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
   <div class="sec-h">
     <span class="tag">Simulación con los datos medidos por los sensores</span>
     <h2>El río en 3D: cuánto creció de verdad</h2>
-    <p>Los 15 km de río desde el dique hasta Unquillo, con los tres sensores de altura de APRHI. Mové la línea de tiempo o tocá una crecida para ver cómo subió el agua en cada tramo y cómo bajó la onda de crecida río abajo.</p>
+    <p>Los 15 km de río desde el dique hasta Unquillo, con los tres sensores de altura de APRHI. Mové la línea de tiempo o tocá una crecida para ver cómo subió el agua en cada tramo y cómo bajó la onda de crecida río abajo. A velocidad normal, cada hora real dura 1,8 segundos.</p>
   </div>
   <div class="r3-wrap">
     <div class="r3-stage">
@@ -584,7 +586,7 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
       <svg id="r3Spark" preserveAspectRatio="none" aria-hidden="true"></svg>
       <input type="range" id="r3Time" min="0" max="1007" step="1" value="1007" aria-label="Momento a mostrar">
     </div>
-    <span class="mono note" id="r3Range"></span>
+    <div class="r3-vel"><div class="seg small" role="group" aria-label="Velocidad"><button data-r3vel="0.5">Lenta</button><button data-r3vel="1" class="on">Normal</button><button data-r3vel="2">×2</button><button data-r3vel="4">×4</button></div><span class="mono note" id="r3Range"></span></div>
   </div>
 </section>
 
