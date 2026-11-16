@@ -310,6 +310,16 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
 .rd.wet3 b,.rd.wet3 span{color:#fff}
 .rd.nd{background:repeating-linear-gradient(45deg,var(--line-2) 0 3px,transparent 3px 6px)}
 .lg-gap{background:repeating-linear-gradient(45deg,var(--muted) 0 2px,transparent 2px 4px)!important;height:10px!important;opacity:.6}
+/* Lluvia mes por mes */
+table.meses th,table.meses td{padding:6px 5px;text-align:center;font-size:.8rem}
+table.meses th:first-child,table.meses td:first-child{text-align:left;font-weight:600}
+td.mh{font-family:var(--f-mono);background:color-mix(in srgb,var(--water) calc(var(--a) * 85%),var(--panel));color:var(--ink);border:2px solid var(--panel)}
+td.mh.pc{outline:1px dashed var(--muted);outline-offset:-3px}
+td.mh.nd{color:var(--muted);background:transparent}
+.topdias{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:.86rem}
+.topdias li{display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:8px;padding:5px 0;border-bottom:1px solid var(--line-2)}
+.topdias li:first-child b{color:var(--crit)}
+@media (max-width:900px){.hcard .cols{grid-template-columns:1fr!important}}
 
 </style>
 
@@ -417,6 +427,9 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
         <button data-rng="1">24 h</button>
         <button data-rng="7" class="on">7 días</button>
         <button data-rng="30">30 días</button>
+        <button data-rng="90">90 días</button>
+        <button data-rng="365">1 año</button>
+        <button data-rng="9999">Desde 2021</button>
       </div>
     </div>
     <p class="hsum" id="hSummary">Cargando historial…</p>
@@ -450,6 +463,20 @@ footer.foot{border-top:1px solid var(--line);padding-block:26px 40px;color:var(-
       <div class="hcard-h"><h3>Nivel del dique</h3><span class="mono hbig" id="hDamNow"></span></div>
       <p class="note">Metros respecto del labio del vertedero. Por encima de 0 el dique vierte al río.</p>
       <div class="hchart short" id="chDam"></div>
+    </div>
+  </div>
+
+  <div class="hcard">
+    <div class="hcard-h"><h3>Lluvia mes por mes desde 2021</h3><span class="note">Promedio de Cuenca Alta Colanchanga y Los Hornillos, en mm</span></div>
+    <div class="cols" style="grid-template-columns:minmax(0,1fr) 260px;gap:26px">
+      <div class="stack" style="gap:6px;min-width:0">
+        <div class="tablewrap"><table class="meses" id="tbMeses"><tr><td class="muted">Cargando archivo…</td></tr></table></div>
+        <p class="note">Cuanto más oscura la celda, más llovió ese mes. * El total del año tiene meses con datos incompletos (celdas con borde punteado), así que puede ser mayor. La lluvia media de la zona ronda los 750 mm por año.</p>
+      </div>
+      <div class="stack" style="gap:6px">
+        <h3>Los 10 días más lluviosos</h3>
+        <ol class="topdias" id="topDias"></ol>
+      </div>
     </div>
   </div>
 

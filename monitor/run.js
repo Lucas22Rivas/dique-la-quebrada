@@ -148,6 +148,17 @@ async function main() {
     console.log("Historial:", hist.recarga ? "recarga completa (30 días)" : "actualizado", "·", hist.eventos.length, "crecidas en 30 días");
   } catch (e) { errores.push("Historial: " + e.message); }
 
+  // Archivo histórico del año en curso: se actualiza una vez por día (o si falta)
+  try {
+    const y = new Date(now).getUTCFullYear();
+    let arch = null; try { arch = await getJSON(SITIO + "data/archivo/" + y + ".json?t=" + now, 1); } catch (e) { }
+    if (!arch) { const loc = path.join(__dirname, "..", "archivo", y + ".json"); if (fs.existsSync(loc)) arch = JSON.parse(fs.readFileSync(loc, "utf8")); }
+    const viejo = !arch || !arch.hasta || now - Date.parse(arch.hasta) > 20 * 36e5;
+    fs.mkdirSync(path.join(OUT, "archivo"), { recursive: true });
+    if (viejo) { arch = await require("./archivo.js").actualizar(arch, now); console.log("Archivo", y, "actualizado hasta", arch.hasta); }
+    if (arch) fs.writeFileSync(path.join(OUT, "archivo", y + ".json"), JSON.stringify(arch));
+  } catch (e) { errores.push("Archivo histórico: " + e.message); }
+
   // 5. Evaluación
   const ev = motor.evaluar({
     nivelDique: dique && dique.activa ? dique.respectoVertedero : (dique ? dique.respectoVertedero : null),
