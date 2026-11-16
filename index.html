@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Monitoreo preventivo de crecidas del Dique La Quebrada (Río Ceballos, Córdoba): nivel, lluvias, radar en vivo, simulador y mapa 3D de zonas inundables.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}.leaflet-container{font:inherit}</style>
+</head>
+<body>
+<title>Monitor Dique La Quebrada</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: consola hidrológica — franja de estado arriba, respuesta al 15F, registro de lluvias, simulador, curva de compromiso, fuentes. */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#132a33; --muted:#557079; --line:#d5e0e3;
+  --water:#0b7a8f; --water-soft:#d7eef2; --sediment:#b06a12; --ok:#2e7d4f; --warn:#c08a00; --bad:#b3261e; --crit:#7a1fa2;
+  --chart-in:#4a6fb3; --chart-out:#b3261e; --chart-lvl:#0b7a8f; --sky:#dce8ec;
+  --f-display:"Archivo",system-ui,sans-serif; --f-body:"Source Sans 3",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1a1f; --panel:#13252c; --ink:#e3eef0; --muted:#8fa9b0; --line:#244049;
+  --water:#3fb7cc; --water-soft:#163a43; --sediment:#e09a45; --ok:#5cc28a; --warn:#e2b53c; --bad:#ef6a60; --crit:#c27ee0;
+  --chart-in:#86a5e6; --chart-out:#ef6a60; --chart-lvl:#3fb7cc; --sky:#0f2228; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1a1f; --panel:#13252c; --ink:#e3eef0; --muted:#8fa9b0; --line:#244049;
+  --water:#3fb7cc; --water-soft:#163a43; --sediment:#e09a45; --ok:#5cc28a; --warn:#e2b53c; --bad:#ef6a60; --crit:#c27ee0;
+  --chart-in:#86a5e6; --chart-out:#ef6a60; --chart-lvl:#3fb7cc; --sky:#0f2228; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(1.6rem,3.2vw,2.3rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.25rem;font-weight:700}
+h3{font-size:1rem;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+a{color:var(--water)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+header.top{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end}
+.levelbox{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label{font-size:.85rem;color:var(--muted)}
+input[type=number],select{font-family:var(--f-mono);font-size:.95rem;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:7.5em}
+input[type=range]{width:100%;accent-color:var(--water)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+button{font-family:var(--f-body);font-weight:600;font-size:.88rem;border:1px solid var(--water);background:transparent;color:var(--water);border-radius:6px;padding:6px 12px;cursor:pointer}
+button:hover{background:var(--water-soft)}
+button.on{background:var(--water);color:var(--panel)}
+/* Estado */
+.tile{display:grid;gap:4px;padding:14px 16px;border-left:4px solid var(--line)}
+.tile .v{font-family:var(--f-mono);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums}
+.tile .s{font-size:.85rem;color:var(--muted)}
+.st-ok{border-left-color:var(--ok)} .st-warn{border-left-color:var(--warn)} .st-bad{border-left-color:var(--bad)} .st-crit{border-left-color:var(--crit)}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid currentColor}
+.c-ok{color:var(--ok)} .c-warn{color:var(--warn)} .c-bad{color:var(--bad)} .c-crit{color:var(--crit)}
+/* 15F */
+.verdict{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px}
+@media (max-width:760px){.verdict{grid-template-columns:1fr}}
+.bars{display:grid;gap:10px;margin-top:10px}
+.bar{display:grid;grid-template-columns:9.5em 1fr 5.5em;gap:10px;align-items:center;font-size:.88rem}
+.bar .track{height:16px;background:var(--water-soft);border-radius:3px;position:relative;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;border-radius:3px}
+.rec{border:1px solid var(--water);border-radius:10px;padding:14px 16px;display:grid;gap:8px;background:var(--water-soft)}
+.rec ul{margin:0;padding-left:1.1em;display:grid;gap:4px}
+/* Tablas */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td input[type=number]{width:5em;padding:3px 5px;font-size:.85rem}
+tr.hl td{background:var(--water-soft)}
+tfoot td{font-weight:600}
+/* Simulador */
+.sim{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:20px}
+@media (max-width:820px){.sim{grid-template-columns:1fr}}
+.ctrl{display:grid;gap:12px}
+.ctrl .row{display:grid;gap:2px}
+.ctrl .row .lab{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)}
+.ctrl .row .lab b{font-family:var(--f-mono);color:var(--ink);font-weight:600}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.kpi .k{font-size:.75rem;color:var(--muted)}
+.kpi .v{font-family:var(--f-mono);font-size:1.15rem;font-weight:600;font-variant-numeric:tabular-nums}
+svg text{fill:var(--muted);font-family:var(--f-mono);font-size:10.5px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+.chartbox{width:100%;overflow:hidden}
+.note{font-size:.82rem;color:var(--muted)}
+.srcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.src{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:4px;align-content:start}
+.src .what{font-size:.85rem;color:var(--muted)}
+.proto{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.proto div{border-top:4px solid var(--line);padding:10px 0 0;display:grid;gap:4px;font-size:.88rem}
+ol.limits{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:.9rem}
+/* Portada con foto */
+.hero{position:relative;margin:0;border-radius:12px;overflow:hidden;min-height:300px;display:grid;align-items:end;background:var(--ink)}
+.hero img{position:absolute;inset:0;width:100%;height:100%;max-width:100%;object-fit:cover;object-position:center 45%}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,22,28,0) 25%,rgba(8,22,28,.82) 100%)}
+.hero-txt{position:relative;z-index:1;display:grid;gap:8px;padding:28px 22px 40px;max-width:760px;color:#f2f7f8}
+.hero-txt .eyebrow{color:#cfe3e7}
+.hero-txt p{color:#dbe8eb;max-width:66ch}
+.hero .credit{position:absolute;z-index:1;right:10px;bottom:8px;font-size:.7rem;color:#cfe3e7}
+.hero .credit a{color:#cfe3e7}
+@media (min-width:760px){.hero{min-height:380px}}
+/* Mapa 3D */
+.map3d-wrap{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px}
+@media (max-width:860px){.map3d-wrap{grid-template-columns:1fr}}
+#map3d{position:relative;width:100%;height:min(68vh,620px);min-height:360px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--sky);touch-action:none}
+#map3d canvas{display:block}
+#mapInfo{position:absolute;left:10px;bottom:10px;max-width:calc(100% - 20px);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.85rem;display:grid;gap:2px;pointer-events:none}
+#mapInfo span{color:var(--muted)}
+.lyr{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--ink);padding:3px 0;cursor:pointer}
+.lyr input{accent-color:var(--water)}
+.sw{display:inline-block;width:16px;height:12px;border-radius:2px;flex:none}
+.sw.ln{height:4px}
+.sw.pt{width:12px;height:12px;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<figure class="hero">
+  <img src="dique-la-quebrada.jpg" alt="Paredón de hormigón del Dique La Quebrada con sus contrafuertes, visto desde el coronamiento, entre cerros con monte serrano" width="1100" height="825">
+  <figcaption class="hero-txt">
+    <span class="eyebrow">Río Ceballos · Sierras Chicas · Córdoba</span>
+    <h1>Dique La Quebrada · monitoreo preventivo de crecidas</h1>
+    <p>Cuánto colchón de agua conviene dejar bajo el vertedero según la lluvia caída y pronosticada, sin comprometer el agua potable de ~50.000 personas. Comparado contra la tormenta del 15 de febrero de 2015.</p>
+  </figcaption>
+  <span class="credit">Foto: Claudio Elias, 2009 · dominio público · <a href="https://commons.wikimedia.org/wiki/File:R%C3%ADo_Ceballos_001.JPG" target="_blank" rel="noopener">Wikimedia Commons</a></span>
+</figure>
+
+<header class="top">
+  <div style="display:grid;gap:4px;min-width:0">
+    <span class="eyebrow">Presa de hormigón · 47,8 m · vertedero libre de 60 m</span>
+    <p class="muted" style="max-width:60ch">Embalse de 3,3 hm³ sobre los arroyos Colanchanga y Los Hornillos. Abastece a Río Ceballos, Unquillo y Mendiolaza.</p>
+  </div>
+  <div class="levelbox panel" style="padding:12px 14px">
+    <div style="display:grid;gap:2px">
+      <label for="curLevel">Nivel actual (m respecto del vertedero)</label>
+      <input type="number" id="curLevel" step="0.05" value="-1.40">
+      <span class="note">Sensor APRHI, 14/11/2026</span>
+    </div>
+    <div style="display:grid;gap:2px">
+      <label for="curDate">Fecha</label>
+      <input type="date" id="curDate" style="font-family:var(--f-mono);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)">
+    </div>
+  </div>
+</header>
+
+<!-- Estado -->
+<section class="grid g4" id="status" aria-label="Estado actual"></section>
+
+<!-- Situación actual -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:grid;gap:4px">
+    <span class="eyebrow">Situación al domingo 15 de noviembre de 2026</span>
+    <h2>Dique a −1,40 m con tormentas anunciadas para el lunes</h2>
+  </div>
+  <div class="grid g2">
+    <div style="display:grid;gap:8px;align-content:start">
+      <h3>Nivel del embalse</h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Fecha</th><th>Cota</th><th>Respecto del vertedero</th><th>Fuente</th></tr></thead>
+        <tbody>
+          <tr><td>2/11</td><td class="num">32,95 m</td><td class="num">−1,05 m</td><td>APRHI</td></tr>
+          <tr><td>12–13/11</td><td class="num">32,37 m</td><td class="num">−1,63 m</td><td>Cooperativa / Diques de Córdoba</td></tr>
+          <tr class="hl"><td>14/11</td><td class="num">32,60 m</td><td class="num">−1,40 m</td><td>Sensor APRHI (informe municipal)</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Entre el 2 y el 12 de noviembre bajó 58 cm sin lluvia, unos 16.000 m³ por día entre toma de la planta y evaporación. Es más de lo que supone el modelo (unos 11.000 m³/día), así que la autonomía real puede ser menor que la calculada. La tormenta del 13 al 14 lo subió 23 cm. Por esa subida se estima que en la cuenca cayeron unos 25 mm. Es una estimación: no hay datos publicados de los pluviómetros de la cuenca.</p>
+    </div>
+    <div style="display:grid;gap:8px;align-content:start">
+      <h3>Pronóstico (SMN y Aeropuerto Córdoba)</h3>
+      <div class="tablewrap"><table>
+        <tbody>
+          <tr><td>Dom 15</td><td style="text-align:left;white-space:normal">Sol, máxima de 30–31 °C, sin lluvia</td></tr>
+          <tr class="hl"><td>Lun 16</td><td style="text-align:left;white-space:normal"><b class="c-warn">Alerta amarilla por tormentas</b> en toda la provincia, tarde y noche: 30 a 70 mm, que pueden superarse en forma puntual</td></tr>
+          <tr><td>Mar 17</td><td style="text-align:left;white-space:normal">Mejora, sin lluvia</td></tr>
+          <tr><td>Mié 18 – Jue 19</td><td style="text-align:left;white-space:normal">Vuelven lluvias y chaparrones, sin montos anunciados</td></tr>
+          <tr><td>Vie 20</td><td style="text-align:left;white-space:normal">Mejora</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">En el registro de abajo, el pronóstico se cargó con 70 mm, el límite superior del aviso, como criterio preventivo.</p>
+    </div>
+  </div>
+  <div class="rec">
+    <span class="eyebrow" style="color:var(--water)">Lectura para el lunes 16</span>
+    <p>El colchón actual es de <b class="num">0,40 hm³</b>. Con suelo todavía seco absorbe hasta ~75 mm. Si el suelo quedó húmedo por la tormenta del viernes, absorbe solo ~45 mm. Según el modelo, con 70 mm en 6 h:</p>
+    <ul>
+      <li><b>Suelo seco:</b> el dique sube a ~−0,2 m y no vierte.</li>
+      <li><b>Suelo húmedo:</b> vierte desde la hora 5, con un pico de ~70 m³/s sobre el río Ceballos y el dique a +0,7 m.</li>
+      <li><b>Si caen 100 mm puntuales:</b> el pico llega a ~60 m³/s con suelo seco y ~160 m³/s con suelo húmedo.</li>
+    </ul>
+    <p>El dique está 3 m por encima del nivel guía de temporada (−4,5 m). En un día no se puede recuperar ese colchón: con la válvula a 5 m³/s, en 24 h baja unos 1,5 m. Conviene que Defensa Civil tenga listos el corte de vados y el aviso a los barrios de alta amenaza para el lunes a la noche, y que se consulte a APRHI por una descarga preventiva.</p>
+  </div>
+</section>
+
+<!-- Respuesta 15F -->
+<section class="panel">
+  <div class="verdict">
+    <div style="display:grid;gap:12px;align-content:start">
+      <span class="eyebrow">La pregunta</span>
+      <h2>¿Con qué nivel bajo el vertedero el dique habría contenido el 15F?</h2>
+      <p><b>Con ninguno.</b> El 15/02/2015 cayeron entre 250 y 300 mm en unas 12 horas sobre una cuenca de 36,9 km² que ya venía saturada (el embalse estaba lleno y vertiendo el día 14). Eso produce entre <b class="num" id="v15lo">7,6</b> y <b class="num" id="v15hi">8,9 hm³</b> de escurrimiento. El embalse entero, vacío, guarda 3,3 hm³. Aun en el nivel más bajo registrado en la sequía de 2023 (−13 m) habría quedado lugar para menos de un tercio de esa agua.</p>
+      <div class="bars" id="bars15"></div>
+      <p>Lo que sí logra un colchón es <b>demorar el inicio del vertido</b> y <b>absorber por completo tormentas de 50 a 100 mm</b>, que son las frecuentes. En el 15F, con el dique a −5 m, el vertedero habría empezado a volcar unas <b class="num" id="gain5">5 h</b> más tarde: es el tiempo para evacuar las zonas de alta amenaza.</p>
+    </div>
+    <div class="rec">
+      <span class="eyebrow" style="color:var(--water)">Regla de operación propuesta</span>
+      <h3>Curva guía por temporada</h3>
+      <ul>
+        <li><b>Abril–octubre (estiaje):</b> llenar hasta el vertedero (0 m). Es la reserva para el invierno seco.</li>
+        <li><b>Noviembre–marzo (tormentas):</b> mantener <b class="num">−4 a −5 m</b>. Absorbe 72–80 mm con suelo normal (51–58 mm con suelo saturado) y deja 130–150 días de agua potable.</li>
+        <li><b>Pronóstico de más de 80 mm en 48 h, o 5 días previos con más de 53 mm:</b> bajar con la válvula hasta <b class="num">−6,8 m</b>. Equivale al 50 % del volumen, la "cota media" que recomienda el estudio del INA-CIRSA.</li>
+        <li><b>Nunca bajar de −10 m</b> en temporada de lluvias. Debajo de ese nivel quedan menos de 50 días de reserva para la planta potabilizadora.</li>
+      </ul>
+      <p class="note">El colchón solo sirve si se recupera entre tormentas. Las decisiones de válvula corresponden a la APRHI. Esta regla es una propuesta a validar con ellos y con Defensa Civil.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Radar en vivo (solo versión web) -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-end">
+    <div style="display:grid;gap:4px">
+      <span class="eyebrow">Radar de lluvia en vivo · últimas 2 horas</span>
+      <h2>¿Viene tormenta hacia la cuenca?</h2>
+      <p class="note" style="max-width:80ch">Ecos de radar de las últimas dos horas cada 10 minutos, sobre el dique, el río y las zonas de amenaza. Se actualiza solo cada 5 minutos. Las tormentas en Sierras Chicas suelen entrar desde el oeste y el sur: si los ecos amarillos o rojos se acercan a la cuenca del dique, la crecida puede llegar en menos de una hora.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button id="rvPlay" aria-pressed="true">Pausar</button>
+      <button id="rvPrev" aria-label="Cuadro anterior">◀</button>
+      <button id="rvNext" aria-label="Cuadro siguiente">▶</button>
+      <span class="mono" id="rvTime" style="min-width:9em">cargando…</span>
+    </div>
+  </div>
+  <div id="radarMap" style="height:min(60vh,520px);min-height:340px;border-radius:10px;border:1px solid var(--line);overflow:hidden"></div>
+  <div class="legend" style="align-items:center">
+    <span>Intensidad:</span>
+    <span><i style="background:#88ddee;height:10px"></i>débil</span>
+    <span><i style="background:#0099cc;height:10px"></i>moderada</span>
+    <span><i style="background:#ffee00;height:10px"></i>fuerte</span>
+    <span><i style="background:#ff4400;height:10px"></i>muy fuerte</span>
+    <span><i style="background:#c00080;height:10px"></i>granizo posible</span>
+  </div>
+  <p class="note">Radar: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a> (compuesto de radares públicos, resolución limitada). Para más detalle: <a href="https://www.smn.gob.ar/radar" target="_blank" rel="noopener">radar de Córdoba del SMN</a> · <a href="https://www.windy.com/-Weather-radar-radar?radar,-31.17,-64.32,10" target="_blank" rel="noopener">Windy</a>. Mapa base © colaboradores de OpenStreetMap.</p>
+</section>
+
+<!-- Mapa 3D -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:grid;gap:4px">
+    <span class="eyebrow">Mapa de amenaza de inundación · Municipalidad de Río Ceballos</span>
+    <h2>Mapa 3D del valle: zonas que pueden inundarse</h2>
+    <p class="note" style="max-width:85ch">Zonas de amenaza, cursos de agua, escorrentías, cruces, puntos de encuentro y escuelas del mapa oficial publicado en el Protocolo El Niño, sobre el relieve real de la cuenca. Arrastrá para girar, usá la rueda o pellizcá para acercar, y tocá un punto o una zona para ver qué es.</p>
+  </div>
+  <div class="map3d-wrap">
+    <div id="map3d" role="img" aria-label="Mapa 3D de Río Ceballos con zonas de amenaza de inundación, el río y el Dique La Quebrada">
+      <div id="mapInfo"><b>Tocá el mapa</b><span>Zona, altura o nombre del punto</span></div>
+    </div>
+    <div style="display:grid;gap:14px;align-content:start">
+      <div class="presets" role="group" aria-label="Vistas">
+        <button data-view="ciudad" class="on">Ciudad</button>
+        <button data-view="dique">Dique</button>
+        <button data-view="cuenca">Cuenca</button>
+        <button data-view="planta">Planta</button>
+      </div>
+      <div style="display:grid;gap:2px">
+        <div style="display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)"><label for="mapExag">Exageración del relieve</label><b class="mono" id="mapExagOut" style="color:var(--ink)">×1.6</b></div>
+        <input type="range" id="mapExag" min="1" max="4" step="0.1" value="1.6">
+      </div>
+      <div style="display:grid;gap:2px" id="mapLayers"></div>
+      <p class="note">Los vados se marcan con un punto blanco al centro: son los primeros que se cortan con lluvia. El lago es aproximado: se dibujó a partir del relieve, que a esta escala no muestra bien sus brazos angostos.</p>
+    </div>
+  </div>
+  <p class="note">Fuentes: <a href="https://www.google.com/maps/d/viewer?mid=1_dbVz5s9dQjLpd_eYx8iSxt5E-Voy1E" target="_blank" rel="noopener">Mapa de amenaza de inundación</a> (Municipalidad de Río Ceballos, <a href="https://rioceballos.gob.ar/protocolo-el-nino/" target="_blank" rel="noopener">Protocolo El Niño</a>). Relieve: AWS Terrain Tiles (SRTM y otros, ~30 m), remuestreado a ~40 m. Es un mapa de consulta: ante una emergencia valen las indicaciones de Defensa Civil.</p>
+</section>
+
+<!-- Registro de lluvias -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-end">
+    <div style="display:grid;gap:4px">
+      <span class="eyebrow">Paso 1 · cargar lluvias por día</span>
+      <h2>Registro de pluviómetros de la cuenca</h2>
+      <p class="note" style="max-width:75ch">Cargá los milímetros diarios de cada estación (APRHI/Defensa Civil, OHMC, cooperativa o pluviómetros vecinales). El promedio de los últimos 5 días define si el suelo está seco, normal o saturado (condición AMC del método SCS). La fila "pronóstico" se toma del SMN para las próximas 48 h. Datos iniciales al 15/11/2026: los 25 mm del 13/11 son una estimación por la subida del dique, no una lectura de pluviómetro. Las celdas vacías cuentan como sin dato. Lo que cargues queda guardado en este navegador.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="addDay">+ Día</button>
+      <button id="clearRain">Vaciar</button>
+      <button id="exampleRain">Restaurar datos al 15/11</button>
+    </div>
+  </div>
+  <div class="tablewrap"><table id="rainTable"></table></div>
+  <div class="grid g4" id="rainSummary"></div>
+</section>
+
+<!-- Simulador -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:grid;gap:4px">
+    <span class="eyebrow">Paso 2 · simular la tormenta</span>
+    <h2>Simulador de laminación del embalse</h2>
+    <p class="note" style="max-width:80ch">Hidrograma de entrada por método SCS (número de curva y hidrograma unitario triangular, Tc ≈ 1 h), tránsito por el embalse con la curva cota-volumen y el vertedero libre de 60 m. Descuenta la toma de la planta potabilizadora.</p>
+  </div>
+  <div class="sim">
+    <div class="ctrl">
+      <div class="presets" role="group" aria-label="Escenarios">
+        <button data-preset="f15" class="on">15F 2015</button>
+        <button data-preset="y16">Feb 2016</button>
+        <button data-preset="conv">Convectiva 80 mm</button>
+        <button data-preset="reg">Desde registro</button>
+      </div>
+      <div class="row"><div class="lab"><label for="sD0">Nivel inicial</label><b id="oD0"></b></div><input type="range" id="sD0" min="-14" max="0" step="0.25" value="0"></div>
+      <div class="row"><div class="lab"><label for="sP">Lluvia total</label><b id="oP"></b></div><input type="range" id="sP" min="10" max="350" step="5" value="270"></div>
+      <div class="row"><div class="lab"><label for="sH">Duración</label><b id="oH"></b></div><input type="range" id="sH" min="1" max="24" step="1" value="12"></div>
+      <div class="row"><div class="lab"><label for="sAMC">Humedad previa del suelo</label><b id="oAMC"></b></div>
+        <select id="sAMC" style="width:100%"><option value="1">I · seca (&lt;36 mm en 5 días)</option><option value="2">II · normal (36–53 mm)</option><option value="3" selected>III · saturada (&gt;53 mm)</option></select></div>
+      <div class="row"><div class="lab"><label for="sCN">Número de curva base (CN II)</label><b id="oCN"></b></div><input type="range" id="sCN" min="60" max="92" step="1" value="80"></div>
+      <div class="row"><div class="lab"><label for="sQv">Válvula: descarga previa</label><b id="oQv"></b></div><input type="range" id="sQv" min="0" max="20" step="0.5" value="0"></div>
+      <div class="row"><div class="lab"><label for="sTv">Horas de anticipación</label><b id="oTv"></b></div><input type="range" id="sTv" min="0" max="72" step="6" value="0"></div>
+      <div class="row"><div class="lab"><label for="sEx">Toma planta potabilizadora</label><b id="oEx"></b></div><input type="range" id="sEx" min="0" max="600" step="25" value="400"></div>
+      <p class="note">La capacidad real de la válvula de fondo no está publicada. En enero de 2026 APRHI la abrió con "un caudal mínimo". Confirmar el valor antes de usar el escenario de descarga previa.</p>
+    </div>
+    <div style="min-width:0">
+      <div class="kpis" id="simKpis"></div>
+      <div class="chartbox"><svg id="hydro" viewBox="0 0 720 300" width="100%" role="img" aria-label="Hidrograma de entrada y salida del embalse y nivel"></svg></div>
+      <div class="legend"><span><i style="background:var(--chart-in)"></i>Caudal que entra (m³/s)</span><span><i style="background:var(--chart-out)"></i>Caudal que vierte al río (m³/s)</span><span><i style="background:var(--chart-lvl)"></i>Nivel respecto del vertedero (m, eje derecho)</span></div>
+      <p class="note" id="simVerdict" style="margin-top:10px;font-size:.92rem;color:var(--ink)"></p>
+    </div>
+  </div>
+</section>
+
+<!-- Curva de compromiso -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:grid;gap:4px">
+    <span class="eyebrow">Paso 3 · elegir el nivel</span>
+    <h2>Colchón contra crecidas vs. reserva de agua potable</h2>
+    <p class="note" style="max-width:80ch">Cada metro que se baja suma lugar para lluvia, pero resta días de abastecimiento si deja de llover. La autonomía supone la toma de la planta y evaporación de verano, sin aportes del río, hasta el nivel mínimo operativo.</p>
+  </div>
+  <div class="grid g2">
+    <div class="chartbox"><svg id="trade" viewBox="0 0 520 300" width="100%" role="img" aria-label="Lluvia absorbible y días de autonomía según nivel"></svg>
+      <div class="legend"><span><i style="background:var(--water)"></i>Lluvia absorbida sin verter, suelo normal (mm)</span><span><i style="background:var(--water);opacity:.45"></i>Ídem, suelo saturado</span><span><i style="background:var(--sediment)"></i>Días de agua potable (eje derecho)</span></div>
+    </div>
+    <div style="display:grid;gap:10px;align-content:start">
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="display:grid;gap:2px"><label for="evap">Evaporación (mm/día)</label><input type="number" id="evap" value="5" step="0.5" min="0"></div>
+        <div style="display:grid;gap:2px"><label for="dmin">Nivel mínimo operativo (m)</label><input type="number" id="dmin" value="-14" step="0.5" max="-5"></div>
+      </div>
+      <div class="tablewrap"><table id="tradeTable"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- Protocolo -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:grid;gap:4px">
+    <span class="eyebrow">Paso 4 · actuar</span>
+    <h2>Niveles de alerta propuestos</h2>
+    <p class="note">Se calculan solos en la franja de estado, comparando la lluvia pronosticada con la que el embalse puede absorber al nivel actual.</p>
+  </div>
+  <div class="proto">
+    <div style="border-top-color:var(--ok)"><b class="c-ok">Normal</b><span>Pronóstico de 48 h por debajo de la mitad de la lluvia absorbible.</span><span class="muted">Lectura diaria de nivel y pluviómetros.</span></div>
+    <div style="border-top-color:var(--warn)"><b class="c-warn">Atención</b><span>El pronóstico ocupa entre el 50 y el 100 % del colchón, o el suelo está saturado.</span><span class="muted">Pedir a APRHI evaluar la descarga previa. Avisar a Defensa Civil municipal.</span></div>
+    <div style="border-top-color:var(--bad)"><b class="c-bad">Alerta</b><span>El pronóstico supera el colchón: el vertedero va a volcar.</span><span class="muted">Descarga previa, cierre de vados, sirenas y aviso a barrios de alta amenaza (mapa INA-CIRSA).</span></div>
+    <div style="border-top-color:var(--crit)"><b class="c-crit">Emergencia</b><span>Más de 40 mm/h observados en la cuenca, o el dique vertiendo más de 0,5 m (~45 m³/s).</span><span class="muted">Evacuación de zonas de alta amenaza sobre el río Ceballos y el arroyo Saldán.</span></div>
+  </div>
+</section>
+
+<!-- Datos técnicos -->
+<section class="grid g2">
+  <div class="panel" style="display:grid;gap:10px">
+    <span class="eyebrow">Ficha técnica usada en el modelo</span>
+    <div class="tablewrap"><table>
+      <tr><td>Presa</td><td>hormigón, 47,8 m sobre fundación, coronamiento 254 m (1974–76)</td></tr>
+      <tr><td>Volumen al labio del vertedero</td><td class="num">3,30 hm³ (cota 34 m local)</td></tr>
+      <tr><td>Volumen a embalse máximo</td><td class="num">4,0 hm³ (cota 36 m, +2 m)</td></tr>
+      <tr><td>Espejo de agua</td><td class="num">30 ha al vertedero · 35 ha al máximo</td></tr>
+      <tr><td>Vertedero</td><td class="num">libre, 60 m, 6 vanos, 360 m³/s</td></tr>
+      <tr><td>Cuenca de aporte</td><td class="num">36,88 km² (Colanchanga 19,2 + Los Hornillos 16,6)</td></tr>
+      <tr><td>Lluvia media anual</td><td class="num">750 mm</td></tr>
+      <tr><td>Planta potabilizadora</td><td class="num">≈400 m³/h · Río Ceballos, Unquillo, Mendiolaza</td></tr>
+      <tr><td>Población servida</td><td class="num">≈50.000 (Río Ceballos 26.700, censo 2022)</td></tr>
+      <tr><td>Curva cota-volumen (ajustada)</td><td class="num">V = 3,3·(h/34)<sup>3,09</sup> hm³</td></tr>
+    </table></div>
+    <p class="note">La curva cota-volumen se ajustó a los tres datos publicados (3,3 hm³ y 30 ha al vertedero, 4,0 hm³ a +2 m) y los reproduce dentro del 2 %. Con el vertedero de 60 m, 360 m³/s corresponde a 2,0 m de carga, que coincide con la cota de embalse máximo.</p>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <span class="eyebrow">Límites del modelo</span>
+    <ol class="limits">
+      <li>No hay registro pluviográfico público del 15F en la cuenca alta. Se usó 270 mm en 12 h (rango publicado 250–300 mm) con pico nocturno.</li>
+      <li>El número de curva (CN 80, 90 saturado) es una estimación para monte serrano degradado sobre roca. Conviene calibrarlo con crecidas medidas por APRHI.</li>
+      <li>El modelo no incluye los aportes aguas abajo del dique (arroyos Seco, Cabana, Unquillo, La Ensenada), que también causaron daños el 15F.</li>
+      <li>La capacidad de la válvula de fondo y la cota de la toma de la planta no están publicadas. Ambas son parámetros editables.</li>
+      <li>Es una herramienta de apoyo. No reemplaza los protocolos de APRHI ni de Defensa Civil.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- Fuentes -->
+<section class="panel" style="display:grid;gap:14px">
+  <div style="display:grid;gap:4px">
+    <span class="eyebrow">Observatorios y fuentes de datos</span>
+    <h2>Dónde leer cada dato</h2>
+  </div>
+  <div class="srcs">
+    <div class="src"><b>APRHI · Recursos Hídricos de Córdoba</b><span class="what">Nivel diario de embalses, operación de válvulas, ficha técnica del dique.</span><a href="https://www.aprhi.gob.ar/" target="_blank" rel="noopener">aprhi.gob.ar</a><a href="https://www.aprhi.gob.ar/el-dique-la-quebrada-cumple-50-anos-medio-siglo-cuidando-el-agua-de-las-sierras-chicas/" target="_blank" rel="noopener">Ficha 50 años (jul. 2026)</a></div>
+    <div class="src"><b>Observatorio Hidro-Meteorológico de Córdoba (OHMC)</b><span class="what">Integra más de 275 estaciones públicas: APRHI, INTA, SMN, Bolsa de Cereales y municipios.</span><a href="https://ohmc.psi.unc.edu.ar/" target="_blank" rel="noopener">ohmc.psi.unc.edu.ar</a><a href="https://github.com/OHMC" target="_blank" rel="noopener">github.com/OHMC</a></div>
+    <div class="src"><b>INA-CIRSA · Sistema de Gestión de Alertas</b><span class="what">Red telemétrica ALERT (60 pluviómetros) con Defensa Civil provincial. Estaciones cercanas: Dique La Quebrada (4100), Camino El Cuadrado (4600), Las Minas (4500), Pan de Azúcar (6000).</span><a href="https://www.ina.gob.ar/" target="_blank" rel="noopener">ina.gob.ar</a><a href="https://www.ina.gob.ar/ifrh-2016/trabajos/IFRH_2016_paper_82.pdf" target="_blank" rel="noopener">Descripción del SGA (IFRH 2016)</a></div>
+    <div class="src"><b>Servicio Meteorológico Nacional</b><span class="what">Pronóstico y alertas por tormenta para Colón/Sierras Chicas, radar de Córdoba.</span><a href="https://www.smn.gob.ar/" target="_blank" rel="noopener">smn.gob.ar</a></div>
+    <div class="src"><b>Cooperativa de Obras y Servicios de Río Ceballos</b><span class="what">Planta potabilizadora La Quebrada, restricciones de consumo (Ordenanza 2495/2018), partes de nivel en sequía.</span><a href="https://www.cooprc.com.ar/" target="_blank" rel="noopener">cooprc.com.ar</a></div>
+    <div class="src"><b>Municipalidad y Defensa Civil de Río Ceballos</b><span class="what">Protocolo "El Niño", partes de lluvia y emergencia, cortes de vados. Bomberos: 100.</span><a href="https://rioceballos.gob.ar/" target="_blank" rel="noopener">rioceballos.gob.ar</a></div>
+    <div class="src"><b>Estudio INA-CIRSA cuenca Río Ceballos–Saldán</b><span class="what">Morfometría de subcuencas, mapa de amenaza por crecientes y la recomendación de mantener el embalse en cota media.</span><a href="https://repositorio.ina.gob.ar/bitstreams/37480fd8-2243-4959-8fc3-4f4a1e85e82e/download" target="_blank" rel="noopener">Informe (PDF)</a></div>
+    <div class="src"><b>Omixom · red privada de pluviómetros</b><span class="what">Unos 300 pluviómetros en la provincia con datos en tiempo real, usados por APRHI desde 2015.</span><a href="https://www.omixom.com/" target="_blank" rel="noopener">omixom.com</a></div>
+    <div class="src"><b>APRHI · SIHM y Portal de Información Hídrica</b><span class="what">243 estaciones automáticas con lecturas cada 10 minutos. Es la fuente en tiempo real más completa, pero no tiene una API pública documentada: hay que pedir acceso a APRHI.</span><a href="https://opendata.fi.uncoma.edu.ar/jornadasIDERA/trabajos/Suaya_et_al_SIHM.pdf" target="_blank" rel="noopener">Descripción del sistema (PDF)</a></div>
+    <div class="src"><b>Datos de esta actualización (15/11/2026)</b><span class="what">Nivel del dique, informe de la tormenta del 13–14/11 y alerta para el lunes 16.</span><a href="https://rioceballos.gob.ar/informe-tras-las-lluvias-del-13-y-14-de-noviembre-trabajo-coordinado-y-sin-personas-evacuadas/" target="_blank" rel="noopener">Informe municipal 14/11</a><a href="https://www.diquesdecordoba.com.ar/tabla/" target="_blank" rel="noopener">Tabla de diques</a><a href="https://el-periodico.com.ar/local/sigue-el-tiempo-inestable--hay-alerta-por-tormentas-para-el-lunes-16-en-toda-cordoba_a6af8deb0d331d3b83679dfbd" target="_blank" rel="noopener">Alerta lunes 16</a><a href="https://www.cadena3.com/noticia/una-manana-para-todos/cuanto-llovio-en-cordoba-y-como-seguira-el-tiempo-en-los-proximos-dias-tras-el-temporal_613146" target="_blank" rel="noopener">Pronóstico de la semana</a></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+// ---------- Constantes del dique ----------
+const A=36.88, VSP=3.3e6, HSP=34, NEXP=3.09, LW=60, CW=2.1, TC=1.0, ASP=0.30e6;
+const vol=d=>{const h=Math.max(0,HSP+d);return VSP*Math.pow(h/HSP,NEXP)};
+const lev=V=>HSP*Math.pow(Math.max(V,0)/VSP,1/NEXP)-HSP;
+const area=d=>ASP*Math.pow(Math.max(0,HSP+d)/HSP,NEXP-1);
+const cnAmc=(cn,amc)=>amc==1?cn/(2.281-0.01281*cn):amc==3?Math.min(98,cn/(0.427+0.00573*cn)):cn;
+const runoffMM=(P,cn)=>{const S=25400/cn-254,Ia=0.2*S;return P>Ia?(P-Ia)**2/(P-Ia+S):0};
+const absorbP=(room,cn)=>{const S=25400/cn-254,Ia=0.2*S,Q=room/(A*1e3);return (Q+Math.sqrt(Q*Q+4*Q*S))/2+Ia};
+const fmt=(x,d=1)=>x.toLocaleString("es-AR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const $=id=>document.getElementById(id);
+const store={get(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+function hyeto(P,H){const w=[];for(let i=0;i<H;i++){const x=(i+.5)/H;w.push(.3+Math.exp(-((x-.6)**2)/(2*.18*.18)))}const s=w.reduce((a,b)=>a+b,0);return w.map(v=>v/s*P)}
+
+function simulate(o){
+  // o: d0,P,H,cn,qv,tv,ex (m3/h)
+  const dt=300, ext=o.ex/3600;
+  let V=vol(o.d0);
+  const pre=o.qv*o.tv*3600; V=Math.max(vol(-14),V-pre);
+  const dStart=lev(V);
+  const rain=hyeto(o.P,o.H), S=25400/o.cn-254, Ia=0.2*S;
+  let Pc=0,Qc=0;const qh=[];
+  for(const p of rain){Pc+=p;const Q=Pc>Ia?(Pc-Ia)**2/(Pc-Ia+S):0;qh.push(Q-Qc);Qc=Q}
+  const tp=.5+.6*TC,tb=2.67*tp,qp=.208*A/tp;
+  const T=Math.max(24,o.H+10), steps=Math.ceil(T*3600/dt);
+  const t=[],qin=[],qout=[],lv=[];
+  let peakIn=0,peakOut=0,peakD=dStart,spill=0,onset=null;
+  for(let i=0;i<=steps;i++){
+    const th=i*dt/3600;let q=0;
+    for(let k=0;k<qh.length;k++){const u=th-k;if(u<=0||u>=tb)continue;q+=(u<=tp?qp*u/tp:qp*(tb-u)/(tb-tp))*qh[k]}
+    const d=lev(V), qs=d>0?CW*LW*d**1.5:0;
+    if(qs>0.5&&onset===null)onset=th;
+    t.push(th);qin.push(q);qout.push(qs);lv.push(d);
+    peakIn=Math.max(peakIn,q);peakOut=Math.max(peakOut,qs);peakD=Math.max(peakD,d);spill+=qs*dt;
+    V+=(q-qs-ext)*dt;if(V<0)V=0;
+  }
+  return {t,qin,qout,lv,peakIn,peakOut,peakD,spill,onset,runoff:Qc,runoffVol:Qc*A*1e3,dStart,rain};
+}
+
+// ---------- Registro de lluvias ----------
+const STATIONS=["Dique La Quebrada","Camino El Cuadrado","Las Minas","Río Ceballos (centro)"];
+function isoDay(off){const d=new Date($("curDate").value||new Date());d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)}
+const DATA_DATE="2026-11-15"; const K="_"+DATA_DATE;
+function exampleRows(){const ex=[["2026-11-09",[0,"","",""]],["2026-11-10",[0,"","",""]],["2026-11-11",[0,"","",""]],["2026-11-12",[0,"","",""]],["2026-11-13",[25,"","",""]],["2026-11-14",[0,"","",""]],["2026-11-15",[0,"","",""]]];return ex.map(e=>({date:e[0],v:e[1].slice()}))}
+const FC0=[70,70,70,70];
+let rows=store.get("lq_rain"+K,null);
+let fc=store.get("lq_fc"+K,FC0.slice());
+$("curDate").value=store.get("lq_date"+K,DATA_DATE);
+$("curLevel").value=store.get("lq_level"+K,-1.40);
+if(!rows)rows=exampleRows();
+const avg=a=>{const v=a.filter(x=>x!==""&&x!=null&&!isNaN(x)).map(Number);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0};
+
+function renderRain(){
+  rows.sort((a,b)=>a.date<b.date?-1:1);
+  let h="<thead><tr><th>Día</th>"+STATIONS.map(s=>"<th>"+s+"</th>").join("")+"<th>Promedio cuenca</th><th></th></tr></thead><tbody>";
+  rows.forEach((r,i)=>{h+="<tr><td><input type='date' data-r='"+i+"' data-k='date' value='"+r.date+"' style='width:auto'></td>"+r.v.map((x,j)=>"<td><input type='number' min='0' step='0.5' id='r"+i+"_"+j+"' data-r='"+i+"' data-j='"+j+"' value='"+(x===""?"":x)+"' aria-label='"+STATIONS[j]+" "+r.date+"'></td>").join("")+"<td class='num'>"+fmt(avg(r.v))+" mm</td><td><button data-del='"+i+"' aria-label='Borrar día' style='padding:2px 8px'>×</button></td></tr>"});
+  h+="</tbody><tfoot><tr class='hl'><td>Pronóstico 48 h</td>"+fc.map((x,j)=>"<td><input type='number' min='0' step='1' id='fc"+j+"' data-fc='"+j+"' value='"+x+"' aria-label='Pronóstico "+STATIONS[j]+"'></td>").join("")+"<td class='num'>"+fmt(avg(fc))+" mm</td><td></td></tr></tfoot>";
+  $("rainTable").innerHTML=h;
+}
+$("rainTable").addEventListener("change",e=>{
+  const el=e.target;
+  if(el.dataset.fc!==undefined){fc[+el.dataset.fc]=el.value===""?"":+el.value;store.set("lq_fc"+K,fc)}
+  else if(el.dataset.k==="date"){rows[+el.dataset.r].date=el.value}
+  else if(el.dataset.j!==undefined){rows[+el.dataset.r].v[+el.dataset.j]=el.value===""?"":+el.value}
+  store.set("lq_rain"+K,rows);renderRain();update();
+});
+$("rainTable").addEventListener("click",e=>{const b=e.target.closest("[data-del]");if(!b)return;rows.splice(+b.dataset.del,1);store.set("lq_rain"+K,rows);renderRain();update()});
+$("addDay").onclick=()=>{const last=rows.length?rows[rows.length-1].date:isoDay(-1);const d=new Date(last);d.setDate(d.getDate()+1);rows.push({date:d.toISOString().slice(0,10),v:["","","",""]});store.set("lq_rain"+K,rows);renderRain();update()};
+$("clearRain").onclick=()=>{rows=[];fc=["","","",""];store.set("lq_rain"+K,rows);store.set("lq_fc"+K,fc);renderRain();update()};
+$("exampleRain").onclick=()=>{rows=exampleRows();fc=FC0.slice();store.set("lq_rain"+K,rows);store.set("lq_fc"+K,fc);renderRain();update()};
+
+function rainStats(){
+  const cur=$("curDate").value;
+  const last5=rows.filter(r=>r.date<=cur&&r.date>isoDay(-5)).map(r=>avg(r.v));
+  const p5=last5.reduce((s,x)=>s+x,0);
+  const amc=p5<36?1:p5<=53?2:3;
+  const maxDay=rows.length?Math.max(...rows.map(r=>avg(r.v))):0;
+  return {p5,amc,fcst:avg(fc),maxDay};
+}
+
+// ---------- Estado ----------
+function update(){
+  const d=+$("curLevel").value||0;
+  store.set("lq_level"+K,d);store.set("lq_date"+K,$("curDate").value);
+  const rs=rainStats();
+  const cn=cnAmc(80,rs.amc);
+  const room=Math.max(0,vol(0)-vol(Math.min(d,0)));
+  const absorb=room>0?absorbP(room,cn):0;
+  const qrun=runoffMM(rs.fcst,cn)*A*1e3;
+  const ratio=room>0?qrun/room:(rs.fcst>0?99:0);
+  const ev=+$("evap").value||0, dmin=+$("dmin").value||-14, ex=+$("sEx").value*24;
+  const aut=Math.max(0,vol(Math.min(d,0))-vol(dmin))/(ex+ev/1000*area(Math.min(d,0)));
+  let lvl,cls,txt;
+  if(d>0.5||rs.maxDay>=150){lvl="Emergencia";cls="crit";txt="Vertido intenso o lluvia extrema registrada."}
+  else if(ratio>=1||d>=0&&rs.fcst>15){lvl="Alerta";cls="bad";txt="El pronóstico supera el colchón: el vertedero va a volcar."}
+  else if(ratio>=.5||rs.amc===3){lvl="Atención";cls="warn";txt=rs.amc===3?"Suelo saturado: la próxima lluvia escurre casi entera.":"El pronóstico ocupa más de la mitad del colchón."}
+  else{lvl="Normal";cls="ok";txt="El colchón actual absorbe la lluvia pronosticada."}
+  const month=new Date($("curDate").value||Date.now()).getMonth()+1;
+  const wet=month>=11||month<=3;
+  const target=rs.fcst>80||rs.amc===3?-6.8:wet?-4.5:0;
+  const tcls=Math.abs(d-target)<0.6?"ok":(d>target?"warn":"ok");
+  const tiles=[
+    {c:"st-"+cls,e:"Nivel de alerta",v:"<span class='c-"+cls+"'>"+lvl+"</span>",s:txt},
+    {c:"st-"+(room>0?"ok":"bad"),e:"Colchón bajo vertedero",v:fmt(room/1e6,2)+" hm³",s:"Absorbe ~"+fmt(absorb,0)+" mm con suelo "+["","seco","normal","saturado"][rs.amc]+" (CN "+fmt(cn,0)+")."},
+    {c:"st-"+(rs.amc===3?"warn":"ok"),e:"Lluvia últimos 5 días",v:fmt(rs.p5,0)+" mm",s:"Pronóstico 48 h: "+fmt(rs.fcst,0)+" mm → "+fmt(qrun/1e6,2)+" hm³ de escurrimiento."},
+    {c:"st-"+tcls,e:"Nivel guía hoy",v:(target===0?"0,0":fmt(target,1))+" m",s:(wet?"Temporada de tormentas":"Estiaje: llenar")+". Agua potable: "+fmt(aut,0)+" días sin lluvia."}
+  ];
+  $("status").innerHTML=tiles.map(t=>"<div class='panel tile "+t.c+"'><span class='eyebrow'>"+t.e+"</span><span class='v'>"+t.v+"</span><span class='s'>"+t.s+"</span></div>").join("");
+  const s=rainStats();
+  $("rainSummary").innerHTML=[
+    ["Acumulado 5 días",fmt(s.p5,0)+" mm"],["Condición del suelo","AMC "+["","I seca","II normal","III saturada"][s.amc]],["Día más lluvioso cargado",fmt(s.maxDay,0)+" mm"],["Pronóstico vs. colchón",room>0?fmt(Math.min(ratio*100,999),0)+" %":"sin colchón"]
+  ].map(x=>"<div class='kpi'><div class='k'>"+x[0]+"</div><div class='v'>"+x[1]+"</div></div>").join("");
+  renderTrade(d);
+}
+
+// ---------- 15F barras ----------
+function render15(){
+  const lo=runoffMM(270,80)*A*1e3, hi=runoffMM(270,cnAmc(80,3))*A*1e3;
+  $("v15lo").textContent=fmt(lo/1e6,1);$("v15hi").textContent=fmt(hi/1e6,1)+" hm³";
+  const max=hi*1.05;
+  const items=[["Escurrimiento 15F",hi,"var(--bad)",fmt(hi/1e6,1)+" hm³"],["Embalse completo",VSP,"var(--water)","3,3 hm³"],["Colchón a −13 m",vol(0)-vol(-13),"var(--water)",fmt((vol(0)-vol(-13))/1e6,1)+" hm³"],["Colchón a −5 m",vol(0)-vol(-5),"var(--water)",fmt((vol(0)-vol(-5))/1e6,1)+" hm³"]];
+  $("bars15").innerHTML=items.map(i=>"<div class='bar'><span>"+i[0]+"</span><span class='track'><span class='fill' style='width:"+(i[1]/max*100)+"%;background:"+i[2]+"'></span></span><span class='num'>"+i[3]+"</span></div>").join("");
+  const a=simulate({d0:0,P:270,H:12,cn:cnAmc(80,3),qv:0,tv:0,ex:400}), b=simulate({d0:-5,P:270,H:12,cn:cnAmc(80,3),qv:0,tv:0,ex:400});
+  $("gain5").textContent=fmt((b.onset||0)-(a.onset||0),0)+" h";
+}
+
+// ---------- Simulador ----------
+const PRESETS={f15:{P:270,H:12,amc:3},y16:{P:150,H:10,amc:2},conv:{P:80,H:3,amc:2}};
+document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-preset]").forEach(x=>x.classList.toggle("on",x===b));
+  const k=b.dataset.preset;
+  if(k==="reg"){const s=rainStats();$("sP").value=Math.max(10,Math.round(s.fcst/5)*5);$("sH").value=12;$("sAMC").value=s.amc;$("sD0").value=Math.max(-14,Math.min(0,+$("curLevel").value||0))}
+  else{const p=PRESETS[k];$("sP").value=p.P;$("sH").value=p.H;$("sAMC").value=p.amc}
+  runSim();
+});
+["sD0","sP","sH","sAMC","sCN","sQv","sTv","sEx"].forEach(id=>$(id).addEventListener("input",()=>{runSim();if(id==="sEx")update()}));
+
+function runSim(){
+  const o={d0:+$("sD0").value,P:+$("sP").value,H:+$("sH").value,cn:cnAmc(+$("sCN").value,+$("sAMC").value),qv:+$("sQv").value,tv:+$("sTv").value,ex:+$("sEx").value};
+  $("oD0").textContent=fmt(o.d0,2)+" m";$("oP").textContent=o.P+" mm";$("oH").textContent=o.H+" h";$("oAMC").textContent="CN "+fmt(o.cn,0);
+  $("oCN").textContent=$("sCN").value;$("oQv").textContent=fmt(o.qv,1)+" m³/s";$("oTv").textContent=o.tv+" h";$("oEx").textContent=o.ex+" m³/h";
+  const r=simulate(o);
+  const room=vol(0)-vol(r.dStart);
+  const k=[
+    ["Escurrimiento",fmt(r.runoffVol/1e6,2)+" hm³"],["Colchón al empezar",fmt(room/1e6,2)+" hm³"],["Pico de entrada",fmt(r.peakIn,0)+" m³/s"],["Pico al río",fmt(r.peakOut,0)+" m³/s"],["Nivel máximo",(r.peakD>0?"+":"")+fmt(r.peakD,2)+" m"],["Empieza a verter",r.onset===null?"no vierte":"hora "+fmt(r.onset,1)]
+  ];
+  $("simKpis").innerHTML=k.map(x=>"<div class='kpi'><div class='k'>"+x[0]+"</div><div class='v'>"+x[1]+"</div></div>").join("");
+  let v;
+  if(r.onset===null)v="El embalse absorbe toda la tormenta: no hay vertido. Queda en "+fmt(lev(vol(r.dStart)+r.runoffVol),2)+" m.";
+  else{const att=r.peakIn>0?(1-r.peakOut/r.peakIn)*100:0;
+    v="El vertedero vuelca desde la hora "+fmt(r.onset,1)+" y descarga "+fmt(r.spill/1e6,2)+" hm³ al río. El pico se reduce "+fmt(att,0)+" % respecto de la entrada.";
+    if(r.peakD>2)v+=" Supera la cota de embalse máximo (+2 m): situación de riesgo para la presa.";
+    if(r.runoffVol>room*1.5)v+=" El volumen supera largamente el colchón, así que bajar más el nivel solo gana tiempo, no evita el vertido.";}
+  if(o.qv*o.tv>0)v+=" La descarga previa ("+fmt(o.qv,1)+" m³/s durante "+o.tv+" h) bajó el embalse a "+fmt(r.dStart,2)+" m antes de la lluvia.";
+  $("simVerdict").textContent=v;
+  drawHydro(r);
+}
+
+function drawHydro(r){
+  const W=720,H=300,m={l:48,r:48,t:14,b:34},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const T=r.t[r.t.length-1];
+  const qmax=Math.max(50,Math.ceil(Math.max(r.peakIn,r.peakOut)/50)*50);
+  const dlo=Math.floor(Math.min(...r.lv,-1)),dhi=Math.max(2.5,Math.ceil(r.peakD+.5));
+  const x=t=>m.l+t/T*iw,yq=q=>m.t+ih-q/qmax*ih,yd=d=>m.t+ih-(d-dlo)/(dhi-dlo)*ih;
+  let s="";
+  const qt=niceTicks(qmax,5);
+  qt.forEach(q=>{s+="<line x1='"+m.l+"' x2='"+(W-m.r)+"' y1='"+yq(q)+"' y2='"+yq(q)+"' stroke='var(--line)' stroke-width='1'/><text x='"+(m.l-6)+"' y='"+(yq(q)+3.5)+"' text-anchor='end'>"+q+"</text>"});
+  const dstep=(dhi-dlo)>8?2:1;
+  for(let d=Math.ceil(dlo/dstep)*dstep;d<=dhi;d+=dstep){s+="<text x='"+(W-m.r+6)+"' y='"+(yd(d)+3.5)+"'>"+(d>0?"+":"")+d+"</text>"}
+  const tstep=T>30?6:3;
+  for(let t=0;t<=T;t+=tstep){s+="<text x='"+x(t)+"' y='"+(H-m.b+16)+"' text-anchor='middle'>"+t+" h</text>"}
+  // lluvia en barras arriba
+  const pmax=Math.max(...r.rain);
+  r.rain.forEach((p,i)=>{const h=p/pmax*40;s+="<rect x='"+x(i)+"' y='"+m.t+"' width='"+Math.max(1,x(i+1)-x(i)-1)+"' height='"+h+"' fill='var(--chart-in)' opacity='.18'/>"});
+  // línea del vertedero (0 m)
+  s+="<line x1='"+m.l+"' x2='"+(W-m.r)+"' y1='"+yd(0)+"' y2='"+yd(0)+"' stroke='var(--chart-lvl)' stroke-dasharray='4 4' stroke-width='1'/><text x='"+(W-m.r-4)+"' y='"+(yd(0)-4)+"' text-anchor='end' style='fill:var(--chart-lvl)'>labio del vertedero</text>";
+  if(dhi>=2){s+="<line x1='"+m.l+"' x2='"+(W-m.r)+"' y1='"+yd(2)+"' y2='"+yd(2)+"' stroke='var(--bad)' stroke-dasharray='2 4' stroke-width='1'/><text x='"+(W-m.r-4)+"' y='"+(yd(2)-4)+"' text-anchor='end' style='fill:var(--bad)'>embalse máximo +2 m</text>"}
+  const path=(arr,yf)=>arr.map((v,i)=>(i?"L":"M")+x(r.t[i]).toFixed(1)+","+yf(v).toFixed(1)).join("");
+  s+="<path d='"+path(r.qin,yq)+"L"+x(T)+","+yq(0)+"L"+x(0)+","+yq(0)+"Z' fill='var(--chart-in)' opacity='.12'/>";
+  s+="<path d='"+path(r.qin,yq)+"' fill='none' stroke='var(--chart-in)' stroke-width='2'/>";
+  s+="<path d='"+path(r.qout,yq)+"' fill='none' stroke='var(--chart-out)' stroke-width='2'/>";
+  s+="<path d='"+path(r.lv,yd)+"' fill='none' stroke='var(--chart-lvl)' stroke-width='2.2'/>";
+  s+="<text x='"+m.l+"' y='"+(H-4)+"'>m³/s</text><text x='"+(W-m.r)+"' y='"+(H-4)+"' text-anchor='end'>m</text>";
+  $("hydro").innerHTML=s;
+}
+function niceTicks(max,n){const raw=max/n,p=Math.pow(10,Math.floor(Math.log10(raw))),st=[1,2,5,10].map(k=>k*p).find(k=>k>=raw);const a=[];for(let v=0;v<=max+1e-9;v+=st)a.push(Math.round(v));return a}
+
+// ---------- Curva de compromiso ----------
+function renderTrade(cur){
+  const ev=+$("evap").value||0,dmin=+$("dmin").value||-14,ex=+$("sEx").value*24;
+  const lv=[];for(let d=0;d>=Math.max(dmin,-14);d-=0.5)lv.push(d);
+  const data=lv.map(d=>{const room=vol(0)-vol(d);return{d,room,pII:room>0?absorbP(room,80):0,pIII:room>0?absorbP(room,cnAmc(80,3)):0,aut:Math.max(0,vol(d)-vol(dmin))/(ex+ev/1000*area(d))}});
+  const W=520,H=300,m={l:44,r:48,t:14,b:36},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const dlo=data[data.length-1].d, pmax=Math.ceil(Math.max(...data.map(x=>x.pII))/25)*25, amax=Math.ceil(Math.max(...data.map(x=>x.aut))/50)*50||50;
+  const x=d=>m.l+(d-0)/(dlo-0)*iw, yp=p=>m.t+ih-p/pmax*ih, ya=a=>m.t+ih-a/amax*ih;
+  let s="";
+  niceTicks(pmax,5).forEach(p=>{s+="<line x1='"+m.l+"' x2='"+(W-m.r)+"' y1='"+yp(p)+"' y2='"+yp(p)+"' stroke='var(--line)'/><text x='"+(m.l-6)+"' y='"+(yp(p)+3.5)+"' text-anchor='end'>"+p+"</text>"});
+  niceTicks(amax,5).forEach(a=>{s+="<text x='"+(W-m.r+6)+"' y='"+(ya(a)+3.5)+"' style='fill:var(--sediment)'>"+a+"</text>"});
+  for(let d=0;d>=dlo;d-=2)s+="<text x='"+x(d)+"' y='"+(H-m.b+16)+"' text-anchor='middle'>"+d+" m</text>";
+  // banda recomendada
+  s+="<rect x='"+x(-4)+"' y='"+m.t+"' width='"+(x(-5)-x(-4))+"' height='"+ih+"' fill='var(--water)' opacity='.12'/><text x='"+((x(-4)+x(-5))/2)+"' y='"+(m.t+12)+"' text-anchor='middle' style='fill:var(--water)'>guía</text>";
+  s+="<line x1='"+x(-6.8)+"' x2='"+x(-6.8)+"' y1='"+m.t+"' y2='"+(m.t+ih)+"' stroke='var(--water)' stroke-dasharray='3 3'/><text x='"+(x(-6.8)+4)+"' y='"+(m.t+26)+"' style='fill:var(--water)'>50 % (INA)</text>";
+  const pth=(f,y)=>data.map((p,i)=>(i?"L":"M")+x(p.d).toFixed(1)+","+y(f(p)).toFixed(1)).join("");
+  s+="<path d='"+pth(p=>p.pIII,yp)+"' fill='none' stroke='var(--water)' stroke-width='2' opacity='.45'/>";
+  s+="<path d='"+pth(p=>p.pII,yp)+"' fill='none' stroke='var(--water)' stroke-width='2.4'/>";
+  s+="<path d='"+pth(p=>p.aut,ya)+"' fill='none' stroke='var(--sediment)' stroke-width='2.4'/>";
+  if(cur<=0&&cur>=dlo){const room=vol(0)-vol(cur),p=room>0?absorbP(room,80):0;s+="<line x1='"+x(cur)+"' x2='"+x(cur)+"' y1='"+m.t+"' y2='"+(m.t+ih)+"' stroke='var(--ink)' stroke-width='1'/><circle cx='"+x(cur)+"' cy='"+yp(p)+"' r='4' fill='var(--water)'/><text x='"+(x(cur)+5)+"' y='"+(m.t+ih-6)+"' style='fill:var(--ink)'>hoy</text>"}
+  s+="<text x='"+m.l+"' y='"+(H-4)+"'>mm absorbibles</text><text x='"+(W-m.r)+"' y='"+(H-4)+"' text-anchor='end' style='fill:var(--sediment)'>días de agua</text>";
+  $("trade").innerHTML=s;
+  const show=[0,-1,-2,-3,-4,-5,-6,-6.8,-8,-10,-13].filter(d=>d>=dmin);
+  let h="<thead><tr><th>Nivel</th><th>Colchón</th><th>Lluvia absorbida (normal)</th><th>(saturado)</th><th>Agua potable</th></tr></thead><tbody>";
+  show.forEach(d=>{const room=vol(0)-vol(d),a=Math.max(0,vol(d)-vol(dmin))/(ex+ev/1000*area(d));const hl=(d===-4||d===-5)?" class='hl'":"";
+    h+="<tr"+hl+"><td class='num'>"+(d===0?"0":fmt(d,1))+" m</td><td class='num'>"+fmt(room/1e6,2)+" hm³</td><td class='num'>"+(room>0?fmt(absorbP(room,80),0):"–")+" mm</td><td class='num'>"+(room>0?fmt(absorbP(room,cnAmc(80,3)),0):"–")+" mm</td><td class='num'>"+fmt(a,0)+" días</td></tr>"});
+  $("tradeTable").innerHTML=h+"</tbody>";
+}
+
+["curLevel","curDate","evap","dmin"].forEach(id=>$(id).addEventListener("input",update));
+renderRain();render15();runSim();update();
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="mapdata.js"></script>
+<script src="map3d.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="radar.js"></script>
+
+
+</body>
+</html>
