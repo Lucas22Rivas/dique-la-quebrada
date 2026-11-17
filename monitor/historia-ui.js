@@ -32,8 +32,33 @@
     const m = new Map();
     Object.values(ARCH).forEach(a => { if (!a || !a.s[key]) return; const t0 = Date.parse(a.inicio), e = ESC[key]; a.s[key].forEach((v, i) => { const t = t0 + i * 36e5; if (v != null && t >= desde) m.set(t, v / e); }); });
     if (H) { const t0 = Date.parse(H.h.inicio); (H.h.s[key] || []).forEach((v, i) => { const t = t0 + i * 36e5; if (v != null && t >= desde) m.set(t, v); }); }
+    if (key === "dique") return new Map(limpiarDique([...m.entries()].sort((a, b) => a[0] - b[0])));
     return m;
   }
+  // ---------- Lecturas dudosas del nivel del dique ----------
+  // El sensor a veces salta metros sin que llueva (p. ej. +1,60 m el 18/04/2026 con 0 mm). Se descarta una lectura
+  // si se aparta más de 10 cm de la mediana de sus vecinas y en las 48 h previas llovieron menos de 5 mm en la cuenca
+  // (sin lluvia el embalse se mueve centímetros por día, no decímetros en horas).
+  let LL = null, LLk = "", DUD = 0;
+  function lluviaHoras() {
+    const k = (H ? H.generado : "") + "|" + Object.keys(ARCH).filter(y => ARCH[y]).join(",");
+    if (LL && LLk === k) return LL;
+    const a = horaria("p58", 0), b = horaria("p93", 0); LL = new Map(); LLk = k;
+    for (const t of new Set([...a.keys(), ...b.keys()])) { const v = [a.get(t), b.get(t)].filter(x => x != null); LL.set(t, v.reduce((x, y) => x + y, 0) / v.length); }
+    return LL;
+  }
+  function limpiarDique(pts) {
+    const ll = lluviaHoras(), val = pts.filter(p => p[1] != null), mala = new Set(), W = 12;
+    val.forEach((p, i) => {
+      const w = val.slice(Math.max(0, i - W), i + W + 1).map(q => q[1]).sort((x, y) => x - y), med = w[w.length >> 1];
+      if (Math.abs(p[1] - med) <= 0.1) return;
+      let mm = 0; const h0 = Math.floor(p[0] / 36e5) * 36e5; for (let k = 0; k <= 48; k++) mm += ll.get(h0 - k * 36e5) || 0;
+      if (mm < 5) mala.add(p[0]);
+    });
+    DUD = mala.size;
+    return pts.map(p => mala.has(p[0]) ? [p[0], null] : p);
+  }
+  const lleno = d => Math.min(1, Math.max(0, Math.pow((34 + d) / 34, 3.09)));  // fracción del volumen al vertedero, V(d)=3,3·((34+d)/34)^3,09 hm³
   const diaLocal = t => { const d = new Date(t - 3 * 36e5); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) + 3 * 36e5; };
   function diaria(key, desde, agg) {
     const m = horaria(key, desde), d = new Map();
@@ -168,10 +193,24 @@
       return `<tr${c ? " class='hl'" : ""}><td>${n}${c ? " <span class='muted'>· cuenca</span>" : ""}</td><td class="num">${fmt(tot, 1)} mm</td><td class="num">${fmt(mx, 1)} mm</td><td class="muted">${mt ? fecha(mt) : "–"}</td></tr>`;
     }).join("") + "</tbody>";
     // Dique
-    const dq = S("dique");
+    const dq = rng <= 30 ? limpiarDique(S("dique")) : S("dique");
     chart($("chDam"), { dias: rng, desde: inicioRango(), series: [{ name: "Dique", col: "var(--water)", pts: dq, w: 2.2 }], unit: "m respecto del vertedero", refs: [{ v: 0, label: "vertedero", col: "var(--chart-out)", show: false }], fmtV: v => (v > 0 ? "+" : "") + fmt(v, 2) + " m", aria: "Nivel del dique" });
     const last = [...dq].reverse().find(p => p[1] != null), first = dq.find(p => p[1] != null);
     $("hDamNow").textContent = last ? fmt(last[1], 2) + " m" + (first ? " (" + (last[1] - first[1] >= 0 ? "+" : "") + fmt((last[1] - first[1]) * 100, 0) + " cm)" : "") : "";
+    // Resumen del período: máximo, mínimo, cuánto vertió y qué tan lleno está
+    const dv = (rng <= 30 ? dq : [...horaria("dique", inicioRango()).entries()]).filter(p => p[1] != null);
+    if (dv.length) {
+      const mx = dv.reduce((a, p) => p[1] > a[1] ? p : a), mn = dv.reduce((a, p) => p[1] < a[1] ? p : a);
+      const diasV = new Set(dv.filter(p => p[1] > 0).map(p => diaLocal(p[0]))).size;
+      const cuando = t => rng <= 7 ? fecha(t) : new Date(t).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: rng > 365 ? "numeric" : undefined });
+      const sg = v => (v > 0 ? "+" : "") + fmt(v, 2) + " m";
+      $("dqStats").innerHTML = [
+        ["Más alto", sg(mx[1]), cuando(mx[0])],
+        ["Más bajo", sg(mn[1]), cuando(mn[0])],
+        ["Vertió", diasV ? diasV + (diasV === 1 ? " día" : " días") : "no", diasV ? "con algún dato sobre 0" : "siempre por debajo"],
+        ["Lleno", fmt(lleno(last[1]) * 100, 0) + " %", "del volumen al vertedero"],
+      ].map(([k, v, s]) => `<div><span>${k}</span><b>${v}</b><i>${s}</i></div>`).join("");
+    } else $("dqStats").innerHTML = "";
     // Resumen en palabras
     const ev = (H.eventos || []).find(e => Date.parse(e.inicio) >= from);
     let txt = `${rng === 1 ? "En las últimas 24 horas" : rng >= 9999 ? "Desde enero de 2021" : rng === 365 ? "En el último año" : "En los últimos " + rng + " días"} llovieron ${fmt(acc, 0)} mm en la cuenca del dique. `;
@@ -224,11 +263,53 @@
     const top = [...dias.entries()].sort((x, y) => y[1] - x[1]).slice(0, 10);
     $("topDias").innerHTML = top.map(([t, v], i) => `<li><span class="mono">${i + 1}.</span><span>${new Date(t).toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span><b class="mono">${fmt(v, 0)} mm</b></li>`).join("");
   }
+  // ---------- Nivel del dique mes por mes e hitos (todo el archivo) ----------
+  async function nivelMeses() {
+    await cargarArchivo(9999);
+    const m = horaria("dique", Date.UTC(DESDE, 0, 1)), dud = DUD, mes = {};
+    let alto = null, bajo = null, primeraV = null;
+    const vAnio = {};
+    for (const [t, v] of m) {
+      if (v == null) continue;
+      const d = new Date(t - 3 * 36e5), y = d.getUTCFullYear(), mo = d.getUTCMonth(), k = y + "-" + mo;
+      const o = mes[k] || (mes[k] = { ult: v, mn: v, mx: v, n: 0, dv: new Set() });
+      o.ult = v; o.mn = Math.min(o.mn, v); o.mx = Math.max(o.mx, v); o.n++;
+      if (v > 0) { o.dv.add(d.getUTCDate()); (vAnio[y] || (vAnio[y] = new Set())).add(k + "-" + d.getUTCDate()); if (!primeraV) primeraV = t; }
+      if (!alto || v > alto[1]) alto = [t, v];
+      if (!bajo || v < bajo[1]) bajo = [t, v];
+    }
+    const ks = Object.keys(mes); if (!ks.length) { $("tbDique").innerHTML = "<tr><td class='muted'>Sin datos del nivel en el archivo.</td></tr>"; return; }
+    const y0 = Math.min(...ks.map(k => +k.split("-")[0])), y1 = new Date().getFullYear();
+    const M = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    const sg = v => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt(Math.abs(v), Math.abs(v) < 1 ? 2 : 1);
+    let h = "<thead><tr><th>Año</th>" + M.map(x => "<th>" + x + "</th>").join("") + "<th>Días<br>vertiendo</th></tr></thead><tbody>";
+    for (let y = y0; y <= y1; y++) {
+      h += "<tr><td>" + y + "</td>" + M.map((_, mo) => {
+        const o = mes[y + "-" + mo]; if (!o) return "<td class='mh nd'>–</td>";
+        const hrs = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate() * 24, parcial = o.n < hrs * .85 && !(y === y1 && mo === new Date().getMonth());
+        const f = lleno(o.ult), a = Math.max(.06, (f - .25) / .75);
+        const tip = `${M[mo]} ${y}: cerró en ${sg(o.ult)} m (${fmt(f * 100, 0)} % lleno). Mínimo ${sg(o.mn)} m, máximo ${sg(o.mx)} m.${o.dv.size ? " Vertió " + o.dv.size + (o.dv.size === 1 ? " día." : " días.") : ""}${parcial ? " Datos incompletos." : ""}`;
+        return `<td class="mh${o.dv.size ? " vt" : ""}${parcial ? " pc" : ""}" style="--a:${a.toFixed(2)}" title="${tip}">${sg(o.ult)}</td>`;
+      }).join("") + `<td class="num">${vAnio[y] ? vAnio[y].size : 0}</td></tr>`;
+    }
+    $("tbDique").innerHTML = h + "</tbody>";
+    const fd = t => new Date(t).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
+    const hoy = [...m.entries()].reverse().find(p => p[1] != null), s2 = v => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt(Math.abs(v), 2);
+    const hit = [
+      ["Hoy", hoy ? s2(hoy[1]) + " m" : "–", hoy ? fmt(lleno(hoy[1]) * 100, 0) + " % lleno" : ""],
+      ["Más alto", s2(alto[1]) + " m", fd(alto[0])],
+      ["Más bajo", s2(bajo[1]) + " m", fd(bajo[0]) + " · " + fmt(lleno(bajo[1]) * 100, 0) + " % lleno"],
+      ["Primera vez que vertió", primeraV ? fd(primeraV) : "no vertió", primeraV ? "" : "desde " + y0],
+      ...Object.keys(vAnio).sort().reverse().map(y => ["Vertió en " + y, vAnio[y].size + " días", ""]),
+    ];
+    $("dqHitos").innerHTML = hit.map(([k, v, s]) => `<li><span>${k}</span><b class="mono">${v}</b>${s ? `<i>${s}</i>` : ""}</li>`).join("");
+    $("dqNote").textContent = `Nivel al cierre de cada mes, en metros respecto del vertedero (por encima de 0 el dique vierte). Cuanto más oscura la celda, más lleno estaba; las celdas con borde verde son meses en que vertió. Pasá el mouse para ver mínimo, máximo y días vertiendo. El sensor de APRHI informa desde octubre de ${y0}${dud ? `; se descartaron ${dud} lecturas dudosas (saltos de más de 10 cm sin lluvia)` : ""}. El porcentaje de llenado sale de la curva de volumen del modelo, es aproximado.`;
+  }
   document.querySelectorAll("[data-rmode]").forEach(b => b.addEventListener("click", () => { rmode = b.dataset.rmode; render(); }));
   document.addEventListener("click", e => { const b = e.target.closest("[data-ver3d]"); if (!b) return; if (window.LQ_RIO3D) { window.LQ_RIO3D.irA(Date.parse(b.dataset.ver3d)); document.getElementById("rio3d").scrollIntoView({ behavior: "smooth" }); } });
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(render, 150); });
   async function cargar() {
-    try { const r = await fetch("data/historia.json?t=" + Date.now(), { cache: "no-store" }); if (!r.ok) throw 0; H = await r.json(); window.LQ_HIST = H; if (rng > 30) await cargarArchivo(rng); render(); if (!$("tbMeses").dataset.ok) { $("tbMeses").dataset.ok = 1; meses().catch(() => { $("tbMeses").innerHTML = "<tr><td class='muted'>No se pudo leer el archivo histórico.</td></tr>"; }); } document.dispatchEvent(new CustomEvent("lq-historia", { detail: H })); }
+    try { const r = await fetch("data/historia.json?t=" + Date.now(), { cache: "no-store" }); if (!r.ok) throw 0; H = await r.json(); window.LQ_HIST = H; if (rng > 30) await cargarArchivo(rng); render(); if (!$("tbMeses").dataset.ok) { $("tbMeses").dataset.ok = 1; meses().catch(() => { $("tbMeses").innerHTML = "<tr><td class='muted'>No se pudo leer el archivo histórico.</td></tr>"; }); nivelMeses().catch(() => { $("tbDique").innerHTML = "<tr><td class='muted'>No se pudo leer el historial del dique.</td></tr>"; }); } document.dispatchEvent(new CustomEvent("lq-historia", { detail: H })); }
     catch (e) { $("hSummary").textContent = "No se pudo leer el historial. Reintentando en unos minutos."; }
   }
   cargar(); setInterval(cargar, 10 * 60 * 1000);

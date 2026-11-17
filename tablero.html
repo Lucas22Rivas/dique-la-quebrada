@@ -321,6 +321,17 @@ td.mh.nd{color:var(--muted);background:transparent}
 .topdias li{display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:8px;padding:5px 0;border-bottom:1px solid var(--line-2)}
 .topdias li:first-child b{color:var(--crit)}
 @media (max-width:900px){.hcard .cols{grid-template-columns:1fr!important}}
+.dstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line-2)}
+.dstats div{display:grid;gap:1px;min-width:0}
+.dstats span{font-size:.74rem;color:var(--muted)}
+.dstats b{font-family:var(--f-mono);font-size:1.05rem;font-weight:600}
+.dstats i{font-style:normal;font-size:.74rem;color:var(--muted)}
+td.mh.vt{box-shadow:inset 0 -3px 0 var(--chart-lvl)}
+.topdias.hitos li{grid-template-columns:minmax(0,1fr) auto;row-gap:0;align-items:baseline}
+.topdias.hitos li span{color:var(--muted)}
+.topdias.hitos li b{text-align:right}
+.topdias.hitos li i{grid-column:1/-1;font-style:normal;font-size:.76rem;color:var(--muted);text-align:right}
+.topdias.hitos li:first-child b{color:var(--ink)}
 /* Cámara Orus */
 .cam-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px}
 @media (max-width:960px){.cam-wrap{grid-template-columns:1fr}}
@@ -578,6 +589,8 @@ button:hover{border-color:var(--water)}
       <div class="hcard-h"><h3>Nivel del dique</h3><span class="mono hbig" id="hDamNow"></span></div>
       <p class="note">Metros respecto del labio del vertedero. Por encima de 0 el dique vierte al río.</p>
       <div class="hchart short" id="chDam"></div>
+      <div class="dstats" id="dqStats"></div>
+      <p class="note"><a href="#nivelDique">Ver el nivel mes por mes desde 2023 ↓</a></p>
     </div>
   </div>
 
@@ -591,6 +604,20 @@ button:hover{border-color:var(--water)}
       <div class="stack" style="gap:6px">
         <h3>Los 10 días más lluviosos</h3>
         <ol class="topdias" id="topDias"></ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="hcard" id="nivelDique">
+    <div class="hcard-h"><h3>Nivel del dique mes por mes</h3><span class="note">Metros respecto del vertedero al cierre de cada mes</span></div>
+    <div class="cols" style="grid-template-columns:minmax(0,1fr) 260px;gap:26px">
+      <div class="stack" style="gap:6px;min-width:0">
+        <div class="tablewrap"><table class="meses" id="tbDique"><tr><td class="muted">Cargando archivo…</td></tr></table></div>
+        <p class="note" id="dqNote"></p>
+      </div>
+      <div class="stack" style="gap:6px">
+        <h3>Hitos del dique</h3>
+        <ol class="topdias hitos" id="dqHitos"></ol>
       </div>
     </div>
   </div>
